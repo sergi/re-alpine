@@ -51,6 +51,7 @@ static char rcsid[] = "$Id: mailview.c 1111 2008-07-11 23:20:32Z hubert@u.washin
 #include "../pith/escapes.h"
 #include "../pith/keyword.h"
 #include "../pith/smime.h"
+#include "../pith/openpgp.h"
 
 
 #define FBUF_LEN	(50)
@@ -346,6 +347,15 @@ format_body(long int msgno, BODY *body, HANDLE_S **handlesp, HEADER_S *hp, int f
 		    }
 		}
 #endif /* SMIME */
+#ifdef OPENPGP
+		if (strucmp(a->body->subtype, OUR_PGP_ENCLOSURE_SUBTYPE) == 0) {
+		    if (a->description) {
+			if (!(!format_editorial(a->description, width, flgs, handlesp, pc) &&
+			      gf_puts(NEWLINE, pc) && gf_puts(NEWLINE, pc)))
+			    return("Write Error");
+		    }
+		}
+#endif /* OPENPGP */
 		continue;
 	    }
 
@@ -421,6 +431,13 @@ format_body(long int msgno, BODY *body, HANDLE_S **handlesp, HEADER_S *hp, int f
 			   && &a[-1] != ps_global->atmts
 			   && a[-2].body && a[-2].body->type == TYPEMESSAGE)
 #endif /* SMIME */
+#ifdef OPENPGP
+		       || (a[-1].body->type == TYPEMULTIPART
+		           && a[-1].body->subtype
+			   && (strucmp(a[-1].body->subtype, OUR_PGP_ENCLOSURE_SUBTYPE)==0)
+			   && &a[-1] != ps_global->atmts
+			   && a[-2].body && a[-2].body->type == TYPEMESSAGE)
+#endif /* OPENPGP */
 		       )
 		   && !(flgs & FM_NOEDITORIAL)){
 		    tmp1 = a->body->description ? a->body->description
@@ -659,6 +676,11 @@ format_attachment_list(long int msgno, BODY *body, HANDLE_S **handlesp, int flgs
 	       && (strucmp(a->body->subtype, OUR_PKCS7_ENCLOSURE_SUBTYPE)==0))
 	      continue;
 #endif /* SMIME */
+#ifdef OPENPGP
+	    if(a->body->type == TYPEMULTIPART
+	       && (strucmp(a->body->subtype, OUR_PGP_ENCLOSURE_SUBTYPE)==0))
+	      continue;
+#endif /* OPENPGP */
 
 	    i = utf8_width((descwid > 2 && a->description) ? a->description : "");
 	    thisdescwid = MIN(i, descwid);

@@ -32,6 +32,7 @@ static char rcsid[] = "$Id: state.c 1071 2008-06-03 22:31:05Z hubert@u.washingto
 #include "../pith/remote.h"
 #include "../pith/list.h"
 #include "../pith/smime.h"
+#include "../pith/openpgp.h"
 
 
 /*
@@ -92,6 +93,13 @@ new_pine_struct(void)
      */
     p->smime           = new_smime_struct();
 #endif /* SMIME */
+#ifdef OPENPGP
+    /*
+     * We need to have access to p->openpgp even before calling
+     * openpgp_init() so that we can set do_encrypt and do_sign.
+     */
+    p->openpgp         = new_openpgp_struct();
+#endif /* OPENPGP */
     p->atmts           = (ATTACH_S *) fs_get(sizeof(ATTACH_S));
     p->atmts_allocated = 1;
     p->atmts->description = NULL;

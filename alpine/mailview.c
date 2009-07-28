@@ -44,6 +44,7 @@ static char rcsid[] = "$Id: mailview.c 1122 2008-08-02 00:32:26Z hubert@u.washin
 #include "dispfilt.h"
 #include "busy.h"
 #include "smime.h"
+#include "openpgp.h"
 #include "../pith/conf.h"
 #include "../pith/filter.h"
 #include "../pith/msgno.h"
@@ -325,6 +326,11 @@ mail_view_screen(struct pine *ps)
 	if(F_OFF(F_DONT_DO_SMIME, ps_global) && fiddle_smime_message(body, raw_msgno))
 	 flags |= FM_NEW_MESS; /* body was changed, force a reload */
 #endif
+#ifdef OPENPGP
+	/* Attempt to handle OpenPGP bodies */
+	if(F_OFF(F_DONT_DO_OPENPGP, ps_global) && fiddle_openpgp_message(body, raw_msgno))
+	 flags |= FM_NEW_MESS; /* body was changed, force a reload */
+#endif
 
 #ifdef _WINDOWS
 	mswin_noscrollupdate(1);
@@ -413,6 +419,12 @@ mail_view_screen(struct pine *ps)
 	  clrbitn(DECRYPT_KEY, scrollargs.keys.bitmap);
 
 	if(F_ON(F_DONT_DO_SMIME, ps_global)){
+	    clrbitn(DECRYPT_KEY, scrollargs.keys.bitmap);
+	    clrbitn(SECURITY_KEY, scrollargs.keys.bitmap);
+	}
+#endif
+#ifdef OPENPGP
+	if(F_ON(F_DONT_DO_OPENPGP, ps_global)){
 	    clrbitn(DECRYPT_KEY, scrollargs.keys.bitmap);
 	    clrbitn(SECURITY_KEY, scrollargs.keys.bitmap);
 	}

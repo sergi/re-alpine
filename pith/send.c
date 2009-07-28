@@ -43,6 +43,7 @@ static char rcsid[] = "$Id: send.c 1125 2008-08-06 18:25:58Z mikes@u.washington.
 #include "../pith/ablookup.h"
 #include "../pith/sort.h"
 #include "../pith/smime.h"
+#include "../pith/openpgp.h"
 
 #include "../c-client/smtp.h"
 #include "../c-client/nntp.h"
@@ -1779,6 +1780,27 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
 	  return 0;
     }
 #endif
+#ifdef OPENPGP
+    if (ps_global->openpgp
+	&&  (ps_global->openpgp->do_encrypt || ps_global->openpgp->do_sign)) {
+    	int result;
+
+    	STORE_S *so = lmc.so;
+	lmc.so = NULL;
+    	result = 1;				/* 1 = OK */
+
+    	if (ps_global->openpgp->do_encrypt) {
+
+	    result = encrypt_outgoing_message(header, &body, ps_global->openpgp->do_sign);
+	}
+	else {
+	    result = sign_outgoing_message(header, &body, 0);
+	}
+	lmc.so = so;
+	if (!result)
+	    return 0;
+    }
+#endif
 
     /* set up counts and such to keep track sent percentage */
     send_bytes_sent = 0;
@@ -2126,6 +2148,10 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
     
     	pine_free_body(&body);
     }
+#endif
+#ifdef OPENPGP
+    /* Free replacement encrypted body (no!  We always do copies
+     * of the bodies) */
 #endif
 
     if(we_cancel)

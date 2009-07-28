@@ -343,6 +343,9 @@ struct pine {
 #ifdef SMIME
     SMIME_STUFF_S *smime;
 #endif /* SMIME */
+#ifdef OPENPGP
+    OPENPGP_STUFF_S *openpgp;
+#endif
 
     struct variable *vars;
 };

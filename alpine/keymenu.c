@@ -870,7 +870,7 @@ struct key view_keys[] =
 	ENDKEY_MENU,
 	RCOMPOSE_MENU,
 	{"A",N_("TogglePreferPlain"),{MC_TOGGLE,1,{'a'}},KS_NONE},
-#ifdef SMIME
+#if defined SMIME || defined OPENPGP
 	{"^D","Decrypt", {MC_DECRYPT,1,{ctrl('d')},KS_NONE}},
 	{"^E","Security", {MC_SECURITY,1,{ctrl('e')},KS_NONE}},
 #else
@@ -2616,6 +2616,51 @@ struct key config_smime_helper_keys[] =
 	HOMEKEY_MENU,
 	ENDKEY_MENU};
 INST_KEY_MENU(config_smime_helper_keymenu, config_smime_helper_keys);
+
+
+struct key openpgp_info_keys[] = 
+       {HELP_MENU,
+    	OTHER_MENU,
+	{"<","Back",{MC_VIEW_TEXT,2,{'<',','}},KS_EXITMODE},
+    	NULL_MENU,
+    	NULL_MENU,
+    	NULL_MENU,
+	PREVPAGE_MENU,
+	NEXTPAGE_MENU,
+    	NULL_MENU,
+    	NULL_MENU,
+    	NULL_MENU,
+    	NULL_MENU,
+
+	HELP_MENU,
+	OTHER_MENU,
+	MAIN_MENU,
+	QUIT_MENU,
+    	NULL_MENU,
+    	NULL_MENU,
+    	NULL_MENU,
+    	NULL_MENU,
+    	NULL_MENU,
+	INDEX_MENU,
+    	NULL_MENU,
+    	NULL_MENU};
+INST_KEY_MENU(openpgp_info_keymenu, openpgp_info_keys);
+
+
+struct key config_openpgp_helper_keys[] = 
+       {HELP_MENU,
+	WHEREIS_MENU,
+	EXIT_SETUP_MENU,
+	{"T","[" N_("Transfer") "]", {MC_CHOICE,3,{'t',ctrl('M'),ctrl('J')}}, KS_NONE},
+	PREV_MENU,
+	NEXT_MENU,
+	PREVPAGE_MENU,
+	NEXTPAGE_MENU,
+	NULL_MENU,
+	NULL_MENU,
+	HOMEKEY_MENU,
+	ENDKEY_MENU};
+INST_KEY_MENU(config_openpgp_helper_keymenu, config_openpgp_helper_keys);
 
 
 /*

@@ -537,6 +537,12 @@ typedef enum {
 	F_PUBLICCERTS_IN_KEYCHAIN,
 #endif
 #endif
+#ifdef	OPENPGP
+	F_DONT_DO_OPENPGP,
+	F_SIGN_DEFAULT_ON,
+	F_ENCRYPT_DEFAULT_ON,
+	F_REMEMBER_OPENPGP_PASSPHRASE,
+#endif
 	F_FEATURE_LIST_COUNT	/* Number of features */
 } FeatureList;
 
@@ -699,6 +705,18 @@ typedef struct smime_stuff {
 } SMIME_STUFF_S;
 
 #endif /* SMIME */
+
+
+#ifdef OPENPGP
+
+typedef struct openpgp_stuff {
+    unsigned inited:1;
+    unsigned do_sign:1;			/* set true if signing */
+    unsigned do_encrypt:1;		/* set true if encrypting */
+
+} OPENPGP_STUFF_S;
+
+#endif /* OPENPGP */
 
 
 /* exported protoypes */

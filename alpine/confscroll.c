@@ -32,6 +32,7 @@ static char rcsid[] = "$Id: confscroll.c 1156 2008-08-21 22:14:45Z hubert@u.wash
 #include "talk.h"
 #include "setup.h"
 #include "smime.h"
+#include "openpgp.h"
 #include "../pith/state.h"
 #include "../pith/flag.h"
 #include "../pith/list.h"
@@ -408,6 +409,9 @@ exclude_config_var(struct pine *ps, struct variable *var, int allow_hard_to_conf
 #ifdef	SMIME
 	     !smime_related_var(ps, var) &&
 #endif	/* SMIME */
+#ifdef OPENPGP
+	     !openpgp_related_var(ps, var) &&
+#endif /* OPENPGP */
 	     !color_related_var(ps, var)));
 }
 
@@ -5212,7 +5216,12 @@ fix_side_effects(struct pine *ps, struct variable *var, int revert)
     else if(smime_related_var(ps, var)){
 	smime_deinit();
     }
-#endif	/* SMIME */
+#endif
+#ifdef OPENPGP
+    else if(openpgp_related_var(ps, var)){
+	openpgp_deinit();
+    }
+#endif
     else if(var == &ps->vars[V_MAXREMSTREAM]){
 	int old_value = ps->s_pool.max_remstream;
 

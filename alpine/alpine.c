@@ -60,6 +60,7 @@ static char rcsid[] = "$Id: alpine.c 1071 2008-06-03 22:31:05Z hubert@u.washingt
 #include "print.h"
 #include "after.h"
 #include "smime.h"
+#include "openpgp.h"
 #ifndef _WINDOWS
 #include "../pico/osdep/raw.h"	/* for STD*_FD */
 #endif
@@ -306,6 +307,9 @@ main(int argc, char **argv)
 #ifdef	SMIME
     mail_parameters(NULL, SET_FREEBODYSPAREP,   (void *) free_smime_body_sparep);
 #endif
+#ifdef OPENPGP
+    mail_parameters(NULL, SET_FREEBODYSPAREP,   (void *) free_openpgp_body_sparep);
+#endif
 
     init_pinerc(pine_state, &init_pinerc_debugging);
 
@@ -436,7 +440,11 @@ main(int argc, char **argv)
 #ifdef SMIME
     if(F_ON(F_DONT_DO_SMIME, ps_global))
       smime_deinit();
-#endif /* SMIME */
+#endif
+#ifdef OPENPGP
+    if(F_ON(F_DONT_DO_OPENPGP, ps_global))
+      openpgp_deinit();
+#endif
 
 #ifdef	ENABLE_NLS
     /*
@@ -2333,7 +2341,7 @@ int
 setup_menu(struct pine *ps)
 {
     int         ret = 0, exceptions = 0;
-    int         printer = 0, passwd = 0, config = 0, sig = 0, dir = 0, smime = 0, exc = 0;
+    int         printer = 0, passwd = 0, config = 0, sig = 0, dir = 0, smime = 0, openpgp = 0, exc = 0;
     SCROLL_S	sargs;
     SRV_S      *srv;
     STORE_S    *store;
@@ -2363,8 +2371,11 @@ setup_menu(struct pine *ps)
     dir++;
 #endif
 
-#ifdef	SMIME
+#ifdef SMIME
     smime++;
+#endif
+#ifdef OPENPGP
+    openpgp++;
 #endif
 
     if(ps_global->post_prc)
@@ -2519,6 +2530,9 @@ setup_menu(struct pine *ps)
 
     if(!smime)
       clrbitn(SETUP_SMIME, sargs.keys.bitmap);
+
+    if(!openpgp)
+      clrbitn(SETUP_OPENPGP, sargs.keys.bitmap);
 
     if(exc)
       menu_init_binding(sargs.keys.menu, 'x', MC_EXCEPT, "X",
@@ -2680,6 +2694,14 @@ do_setup_task(int command)
         /*--- S/MIME --*/
       case 'm':
 	smime_config_screen(ps_global, edit_exceptions);
+	ps_global->mangled_screen = 1;
+	break;
+#endif
+
+#ifdef OPENPGP
+        /*--- OpenPGP --*/
+      case 'g':
+	openpgp_config_screen(ps_global, edit_exceptions);
 	ps_global->mangled_screen = 1;
 	break;
 #endif
@@ -3203,6 +3225,9 @@ goodnight_gracey(struct pine *pine_state, int exit_val)
 
 #ifdef SMIME
     smime_deinit();
+#endif
+#ifdef OPENPGP
+    openpgp_deinit();
 #endif
 
     free_pinerc_strings(&pine_state);

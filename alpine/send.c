@@ -62,6 +62,7 @@ static char rcsid[] = "$Id: send.c 1096 2008-06-30 22:03:35Z hubert@u.washington
 #include "../pith/mimetype.h"
 #include "../pith/send.h"
 #include "../pith/smime.h"
+#include "../pith/openpgp.h"
 
 
 typedef struct body_particulars {
@@ -4587,7 +4588,25 @@ send_exit_for_pico(struct headerentry *he, void (*redraw_pico)(void), int allow_
 	    ps_global->smime->do_encrypt = F_ON(F_ENCRYPT_DEFAULT_ON, ps_global);
 	    ps_global->smime->do_sign = F_ON(F_SIGN_DEFAULT_ON, ps_global);
 	}
-    }		
+    }
+#endif
+#ifdef OPENPGP
+    if(F_OFF(F_DONT_DO_OPENPGP, ps_global)){
+    	opts[i].ch  	= 'e';
+	opts[i].rval	= 'e';
+	opts[i].name	= "E";
+	opts[i++].label	= "Encrypt";
+    
+    	opts[i].ch  	= 'g';
+	opts[i].rval	= 'g';
+	opts[i].name	= "G";
+	opts[i++].label	= "Sign";
+
+	if(ps_global->openpgp){
+	    ps_global->openpgp->do_encrypt = F_ON(F_ENCRYPT_DEFAULT_ON, ps_global);
+	    ps_global->openpgp->do_sign = F_ON(F_SIGN_DEFAULT_ON, ps_global);
+	}
+    }
 #endif
 
     double_rad = i;
@@ -4766,6 +4785,39 @@ send_exit_for_pico(struct headerentry *he, void (*redraw_pico)(void), int allow_
 	    sstrncpy(&optp, "Signed", SIZEOF_20KBUF-(optp-tmp_20k_buf));
 	}
 #endif
+#ifdef OPENPGP
+    	if(ps_global->openpgp && ps_global->openpgp->do_encrypt){
+	    if((optp-tmp_20k_buf)+2 < SIZEOF_20KBUF){
+		if(!lparen){
+		    *optp++ = ' ';
+		    *optp++ = '(';
+		    lparen++;
+		}
+		else{
+		    *optp++ = ',';
+		    *optp++ = ' ';
+		}
+	    }
+
+	    sstrncpy(&optp, "Encrypted", SIZEOF_20KBUF-(optp-tmp_20k_buf));
+	}
+	
+    	if(ps_global->openpgp && ps_global->openpgp->do_sign){
+	    if((optp-tmp_20k_buf)+2 < SIZEOF_20KBUF){
+		if(!lparen){
+		    *optp++ = ' ';
+		    *optp++ = '(';
+		    lparen++;
+		}
+		else{
+		    *optp++ = ',';
+		    *optp++ = ' ';
+		}
+	    }
+
+	    sstrncpy(&optp, "Signed", SIZEOF_20KBUF-(optp-tmp_20k_buf));
+	}
+#endif
 
 	if(lparen && (optp-tmp_20k_buf) < SIZEOF_20KBUF)
 	  *optp++ = ')';
@@ -4926,6 +4978,16 @@ send_exit_for_pico(struct headerentry *he, void (*redraw_pico)(void), int allow_
 	else if(rv=='g'){
 	    if(ps_global->smime)
 	      ps_global->smime->do_sign = !ps_global->smime->do_sign;
+	}
+#endif
+#ifdef OPENPGP
+	else if(rv=='e'){
+	    if(ps_global->openpgp)
+	      ps_global->openpgp->do_encrypt = !ps_global->openpgp->do_encrypt;
+	}
+	else if(rv=='g'){
+	    if(ps_global->openpgp)
+	      ps_global->openpgp->do_sign = !ps_global->openpgp->do_sign;
 	}
 #endif
 

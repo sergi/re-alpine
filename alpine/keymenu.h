@@ -528,6 +528,7 @@ struct key_menu {
 #define SETUP_DIRECTORY		10
 #define SETUP_EXCEPT		14
 #define SETUP_SMIME		16
+#define SETUP_OPENPGP		17
 #define MAIN_HELP_KEY		0
 #define MAIN_DEFAULT_KEY	3
 #define MAIN_KBLOCK_KEY		9
@@ -645,7 +646,9 @@ extern struct key_menu	cancel_keymenu,
 			take_export_keymenu_sm,
 			take_export_keymenu_lm,
 			config_smime_helper_keymenu,
-			smime_info_keymenu;
+			smime_info_keymenu,
+			config_openpgp_helper_keymenu,
+			openpgp_info_keymenu;
 
 extern struct key rev_msg_keys[];
 

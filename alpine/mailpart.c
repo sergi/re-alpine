@@ -65,6 +65,7 @@ static char rcsid[] = "$Id: mailpart.c 1069 2008-06-03 15:54:15Z hubert@u.washin
 #include "../pith/ablookup.h"
 #include "../pith/options.h"
 #include "../pith/smime.h"
+#include "../pith/openpgp.h"
 
 
 /*
@@ -2682,6 +2683,19 @@ format_msg_att(long int msgno, ATTACH_S **a, HANDLE_S **handlesp, gf_io_t pc, in
 	    ++(*a);
 	}
 #endif /* SMIME */
+#ifdef OPENPGP
+	if((*a)->body && (*a)->body->subtype && (strucmp((*a)->body->subtype, OUR_PGP_ENCLOSURE_SUBTYPE)==0)){
+	    if((*a)->description){
+		if(!(!format_editorial((*a)->description,
+				       ps_global->ttyo->screen_cols,
+				       flags, NULL, pc)
+		     && gf_puts(NEWLINE, pc) && gf_puts(NEWLINE, pc)))
+		  rv = 0;
+	    }
+
+	    ++(*a);
+	}
+#endif /* OPENPGP */
 
 	if(((*a))->description
 	   && (*a)->body && (*a)->body->type == TYPETEXT){

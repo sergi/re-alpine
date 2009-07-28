@@ -26,6 +26,7 @@ static char rcsid[] = "$Id: mimedesc.c 1122 2008-08-02 00:32:26Z hubert@u.washin
 #include "../pith/mailpart.h"
 #include "../pith/mailcap.h"
 #include "../pith/smime.h"
+#include "../pith/openpgp.h"
 
 
 /* internal prototypes */
@@ -147,6 +148,24 @@ describe_mime(struct mail_bodystruct *body, char *prefix, int num,
 	    (a+1)->description = NULL;
 	}
 #endif /* SMIME */
+#ifdef OPENPGP
+	else if(!strucmp(body->subtype, OUR_PGP_ENCLOSURE_SUBTYPE)){
+	    memset(a = next_attachment(), 0, sizeof(ATTACH_S));
+	    if(*prefix){
+		prefix[n = strlen(prefix) - 1] = '\0';
+		a->number		       = cpystr(prefix);
+		prefix[n] = '.';
+	    }
+	    else
+	      a->number = cpystr("");
+
+	    a->description     = body->description ? cpystr(body->description)
+						   : cpystr("");
+	    a->body	       = body;
+	    a->can_display     = MCD_INTERNAL;
+	    (a+1)->description = NULL;
+	}
+#endif /* OPENPGP */
 	else if(mailcap_can_display(body->type, body->subtype, body, 0)
 		|| (can_display_ext 
 		    = mailcap_can_display(body->type, body->subtype, body, 1))){
@@ -806,7 +825,21 @@ part_desc(char *number, BODY *body, int type, int width, int flags, gf_io_t pc)
 	    SIZEOF_20KBUF-(t-tmp_20k_buf));
 	}
     
-    } else 
+    } else
+#endif
+#ifdef OPENPGP
+    /* if OpenPGP and not attempting print */
+    if (F_OFF(F_DONT_DO_OPENPGP, ps_global)
+	&&  is_openpgp_body(body)
+	&&  type != 3) {
+
+    	sstrncpy(&t, "\015\012", SIZEOF_20KBUF-(t-tmp_20k_buf));
+	
+	sstrncpy(&t,
+		 "This part is a OpenPGP enclosure. "
+		 "Press \"^E\" for more information.",
+		 SIZEOF_20KBUF-(t-tmp_20k_buf));
+    } else
 #endif
 
     if(type){

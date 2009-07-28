@@ -48,6 +48,7 @@ static char rcsid[] = "$Id: mailcmd.c 1156 2008-08-21 22:14:45Z hubert@u.washing
 #include "takeaddr.h"
 #include "roleconf.h"
 #include "smime.h"
+#include "openpgp.h"
 #include "../pith/state.h"
 #include "../pith/msgno.h"
 #include "../pith/store.h"
@@ -1439,6 +1440,18 @@ get_out:
 
       case MC_SECURITY:
 	state->next_screen = smime_info_screen;
+	break;
+#endif
+
+
+#ifdef OPENPGP
+          /*------- Try to decrypt message -----------*/
+      case MC_DECRYPT:
+	a_changed = TRUE;
+	break;
+
+      case MC_SECURITY:
+	state->next_screen = openpgp_info_screen;
 	break;
 #endif
 

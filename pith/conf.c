@@ -46,6 +46,7 @@ static char rcsid[] = "$Id: conf.c 1167 2008-08-23 00:07:05Z hubert@u.washington
 #include "../pith/icache.h"
 #include "../pith/sort.h"
 #include "../pith/smime.h"
+#include "../pith/openpgp.h"
 #include "../pith/charconv/utf8.h"
 #ifdef _WINDOWS
 #include "../pico/osdep/mswin.h"
@@ -873,6 +874,9 @@ static struct variable variables[] = {
 {"smime-cacert-container",			0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0,
 	"S/MIME - Cert Authority Container", cf_text_cacertcontainer},
 #endif	/* SMIME */
+#ifdef OPENPGP
+/* TODO: add OpenPGP specific settings here. */
+#endif
 #ifdef	ENABLE_LDAP
 {"ldap-servers",			0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0,
 	"LDAP Servers",		cf_text_ldap_server},
@@ -3196,6 +3200,14 @@ feature_list(int index)
 	{"publiccerts-in-keychain", "S/MIME -- Public Certs in MacOS Keychain",
 	 F_PUBLICCERTS_IN_KEYCHAIN, h_config_smime_pubcerts_in_keychain, PREF_HIDDEN, 0},
 #endif
+#endif
+#ifdef OPENPGP
+	{"openpgp-dont-do-openpgp", "OpenPGP -- Turn off OpenPGP",
+	 F_DONT_DO_OPENPGP, NULL, PREF_HIDDEN, 0},
+	{"openpgp-encrypt-by-default", "OpenPGP -- Encrypt by Default",
+	 F_ENCRYPT_DEFAULT_ON, NULL, PREF_HIDDEN, 0},
+	{"openpgp-sign-by-default", "OpenPGP -- Sign by Default",
+	 F_SIGN_DEFAULT_ON, NULL, PREF_HIDDEN, 0},
 #endif
 	{"selectable-item-nobold", NULL,
 	 F_SLCTBL_ITEM_NOBOLD, NO_HELP, PREF_NONE, 0},
@@ -6989,6 +7001,11 @@ toggle_feature(struct pine *ps, struct variable *var, FEATURE_S *f,
 	break;
 #endif
 #endif
+#ifdef OPENPGP
+      case F_DONT_DO_OPENPGP:
+	openpgp_deinit();
+	break;
+#endif
 
       default :
 	break;
@@ -7963,6 +7980,10 @@ get_supported_options(void)
 #ifdef SMIME
     if(++cnt < alcnt)
       config[cnt] = cpystr("  S/MIME");
+#endif
+#ifdef OPENPGP
+    if(++cnt < alcnt)
+      config[cnt] = cpystr("  OpenPGP");
 #endif
 
     if(++cnt < alcnt)
