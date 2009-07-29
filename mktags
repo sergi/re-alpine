@@ -1,0 +1,5 @@
+etags alpine/*.c alpine/*.h
+etags -a pith/*.c pith/*.h
+etags -a include/*.h
+find imap/ -name "*.c" -print0 | xargs -0 etags -a
+find imap/ -name "*.h" -print0 | xargs -0 etags -a
