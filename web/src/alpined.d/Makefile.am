@@ -42,7 +42,7 @@ libwpcomm_la_LDFLAGS = -rpath '$(loclibdir)' -version-info 1:0:0
 
 AM_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
 
-AM_LDFLAGS = `cat $(top_srcdir)/c-client/LDFLAGS`
+LDFLAGS = `cat $(top_srcdir)/c-client/LDFLAGS`
 
 CLEANFILES = local.c
 

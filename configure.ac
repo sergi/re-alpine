@@ -774,6 +774,11 @@ AC_ARG_WITH(smime,
   AC_HELP_STRING([--without-smime],[Disable S/MIME]),
   [ with_smime=$withval ])
 
+dnl Include OpenPGP?
+AC_ARG_WITH(openpgp,
+  AC_HELP_STRING([--without-openpgp],[Disable OpenPGP]),
+  [ with_openpgp=$withval ])
+
 dnl Include TCL?
 AC_ARG_WITH(tcl,
   AC_HELP_STRING([--without-tcl],[Disable TCL, thus Web Alpine support]),
@@ -1478,6 +1483,15 @@ AC_DEFINE_UNQUOTED([MODE_READONLY], $alpine_mode_readonly, [File mode used to se
 dnl c-client make particulars
 AC_SUBST([C_CLIENT_TARGET], $alpine_c_client_target)
 AC_SUBST([C_CLIENT_WITH_IPV6], $c_client_ip6)
+if test "x$with_openpgp" != "xno" ; then
+  AC_DEFINE([OPENPGP], [], [Enable OpenPGP code])
+  AC_SYS_LARGEFILE
+  AC_FUNC_FSEEKO
+  gpgme_cflags="`gpgme-config --cflags`"
+  gpgme_ldflags="`gpgme-config --libs`"
+  AM_CFLAGS="$AM_CFLAGS $gpgme_cflags"
+  AM_LDFLAGS="$AM_LDFLAGS $gpgme_ldflags"
+fi
 if test "x$alpine_SSLTYPE" = "xnone" ; then 
   AC_MSG_NOTICE([* * *  NOT Including SSL Support])
   c_client_specials="${c_client_specials}SSLTYPE=none "

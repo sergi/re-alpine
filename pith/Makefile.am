@@ -27,7 +27,7 @@ libpith_a_SOURCES = ablookup.c abdlc.c addrbook.c addrstring.c adrbklib.c bldadd
 	margin.c mimedesc.c mimetype.c msgno.c newmail.c news.c pattern.c pipe.c \
 	readfile.c remote.c reply.c rfc2231.c save.c search.c sequence.c send.c sort.c \
 	state.c status.c store.c stream.c string.c strlst.c takeaddr.c tempfile.c text.c \
-	thread.c adjtime.c url.c util.c helptext.c smkeys.c smime.c
+	thread.c adjtime.c url.c util.c helptext.c smkeys.c smime.c openpgp.c
 
 help_c_gen$(EXEEXT): $(help_c_gen_OBJECTS) $(help_c_gen_DEPENDENCIES) 
 	@rm -f help_c_gen$(EXEEXT)
