@@ -22,6 +22,10 @@
 #include "../pith/string.h"
 #include "../pith/indxtype.h"
 
+#ifndef __cplusplus
+#   define __ap_not not
+#   define __ap_template template
+#endif
 
 /*
  * This structure is used to contain strings which are matched against
@@ -35,7 +39,7 @@
  * PATTERN_S list.
  */
 typedef struct pattern_s {
-    int               not;		/* NOT of whole pattern */
+    int               __ap_not;		/* NOT of whole pattern */
     char             *substring;
     struct pattern_s *next;
 } PATTERN_S;
@@ -182,7 +186,7 @@ typedef struct action_s {
     char	*fcc;		/* value to set for Fcc			*/
     char	*litsig;	/* value to set Literal Signature	*/
     char	*sig;		/* value to set for Sig File		*/
-    char	*template;	/* value to set for Template		*/
+    char	*__ap_template;	/* value to set for Template		*/
     char	*nick;		/* value to set for Nickname		*/
     int		 repl_type;	/* see ROLE_REPL_* below		*/
     int		 forw_type;	/* see ROLE_FORW_* below		*/

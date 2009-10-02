@@ -25,6 +25,9 @@
  * Type definitions for folder and context structures.
  */
 
+#ifndef __cplusplus
+#   define __ap_new new
+#endif
 
 /*------------------------------
    Used for displaying as well as
@@ -50,7 +53,7 @@ typedef struct folder {
     imapuid_t       uidnext;			/* only for #move folder      */
     char	   *nickname;			/* folder's short name        */
     unsigned long   unseen;			/* for monitoring unseen      */
-    unsigned long   new;			/* for monitoring unseen      */
+    unsigned long   __ap_new;			/* for monitoring unseen      */
     unsigned long   total;			/* for monitoring unseen      */
     time_t          last_unseen_update;		/* see LUU_ constants below   */
     char	    name[1];			/* folder's name              */

@@ -56,6 +56,10 @@
 
 /* Server protocol level and capabilities */
 
+#ifndef __cplusplus
+#   define __ap_namespace namespace
+#endif
+
 typedef struct imap_cap {
   unsigned int rfc1176 : 1;	/* server is RFC-1176 IMAP2 */
   unsigned int imap2bis : 1;	/* server is IMAP2bis */
@@ -68,7 +72,7 @@ typedef struct imap_cap {
   unsigned int mbx_ref : 1;	/* server has mailbox referrals (RFC 2193) */
   unsigned int log_ref : 1;	/* server has login referrals (RFC 2221) */
   unsigned int authanon : 1;	/* server has anonymous SASL (RFC 2245) */
-  unsigned int namespace :1;	/* server has NAMESPACE (RFC 2342) */
+  unsigned int __ap_namespace :1;	/* server has NAMESPACE (RFC 2342) */
   unsigned int uidplus : 1;	/* server has UIDPLUS (RFC 2359) */
   unsigned int starttls : 1;	/* server has STARTTLS (RFC 2595) */
 				/* server disallows LOGIN command (RFC 2595) */

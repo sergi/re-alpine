@@ -1998,10 +1998,15 @@ passfile_name(char *pinerc, char *path, size_t len)
 #ifdef	LOCAL_PASSWD_CACHE
 
 /*
- * For UNIX:
+ * For UNIX (passfile):
  * Passfile lines are
  *
  *   passwd TAB user TAB hostname TAB flags [ TAB orig_hostname ] \n
+ *
+ * For UNIX (KDE Wallet):
+ * Use default network passord wallet, in folder 'Alpine'
+ * Password keys are: <hostname:port>/<user>
+ * And the password entries are: <passwod>\n<altflag>\n<torighthost>
  *
  * In pine4.40 and before there was no orig_hostname, and there still isn't
  * if it is the same as hostname.
@@ -2280,6 +2285,15 @@ read_passfile(pinerc, l)
 
     return(using_passfile);
 
+#elif    KWALLET 
+
+    if(using_passfile == 0)
+      return(using_passfile);
+
+    dprint((9, "read_passfile\n"));
+
+    return kwallet_password_get(l);
+
 #else /* PASSFILE */
 
     char  tmp[MAILTMPLEN], *ui[5];
@@ -2448,6 +2462,15 @@ write_passfile(pinerc, l)
 	    }
 	}
     }
+
+#elif  KWALLET
+
+    if(using_passfile == 0)
+        return;
+
+    dprint((9, "writing kde passwords...\n"));
+    kwallet_password_set(l);
+    return;
 
 #else /* PASSFILE */
 

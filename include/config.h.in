@@ -463,8 +463,14 @@
 /* Enable keyboard lock support */
 #undef KEYBOARD_LOCK
 
+/* Use the KDE KWallet password cache */
+#undef KWALLET
+
 /* Define if you use OpenLDAP 2.3.x deprecated functions */
 #undef LDAP_DEPRECATED
+
+/* Use OS-specific credential cache */
+#undef LOCAL_PASSWD_CACHE
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */

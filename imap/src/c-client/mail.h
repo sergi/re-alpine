@@ -61,6 +61,12 @@
 #include "shortsym.h"
 #endif
 
+#ifndef __cplusplus
+// fix usage of C++ reserved words in C
+#   define __ap_private private  
+#   define __ap_or or 
+#   define __ap_not not 
+#endif
 
 /* Function status code */
 
@@ -826,7 +832,7 @@ typedef struct message_cache {
     unsigned int dirty : 1;	/* driver internal use */
     unsigned int filter : 1;	/* driver internal use */
     unsigned int ghost : 1;	/* driver internal use */
-  } private;
+  } __ap_private;
 			/* internal date */
   unsigned int day : 5;		/* day of month (1-31) */
   unsigned int month : 4;	/* month of year (1-12) */
@@ -937,8 +943,8 @@ SEARCHPGMLIST {
 SEARCHPGM {			/* search program */
   SEARCHSET *msgno;		/* message numbers */
   SEARCHSET *uid;		/* unique identifiers */
-  SEARCHOR *or;			/* or'ed in programs */
-  SEARCHPGMLIST *not;		/* and'ed not program */
+  SEARCHOR *__ap_or;			/* or'ed in programs */
+  SEARCHPGMLIST *__ap_not;		/* and'ed not program */
   SEARCHHEADER *header;		/* list of headers */
   STRINGLIST *bcc;		/* bcc recipients */
   STRINGLIST *body;		/* text in message body */
@@ -1123,7 +1129,7 @@ typedef struct mail_stream {
       char *text;		/* cache of fetched text */
     } search;
     STRING string;		/* stringstruct return hack */
-  } private;
+  } __ap_private;       
 			/* reserved for use by main program */
   void *sparep;			/* spare pointer */
   unsigned int spare : 1;	/* first spare bit */

@@ -1,21 +1,20 @@
 /*
- * kwallet.cpp: KWallet password cache for UW Alpine Messaging System
- *  -- By Jeff Frasca <phaedrus@u.washington.edu>, Copyright 2009, 
- *     Licensed under the Apache 2.0 license, a copy of which may be 
- *     obtained at:
+ * kwallet.cpp: KWallet password cache for the Alpine Messaging System
  *
- *         http://www.apache.org/licenses/LICENSE-2.0
+ * ========================================================================
+ * Copyright 2009 Jeff Frasca, 
  *
- *     This file is derived from Subversion's kwallet.cpp from their 
- *     svn_kwallet_auth module.  Svn's kwallet.cpp was obtained under 
- *     the terms of the Apache 2.0 license.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * ========================================================================
+ *
+ * This file is derived from Subversion's kwallet.cpp from their 
+ * svn_kwallet_auth module.  Svn's kwallet.cpp was obtained under 
+ * the terms of the Apache 2.0 license.
  */
 
 #include <config.h>

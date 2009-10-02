@@ -44,5 +44,9 @@ void    erase_windows_credentials(void);
 void    macos_erase_keychain(void);
 #endif
 
+#ifdef KWALLET
+int kwallet_password_get(MMLOGIN_S **l);
+int kwallet_password_set(MMLOGIN_S *l);
+#endif
 
 #endif /* PINE_IMAP_INCLUDED */

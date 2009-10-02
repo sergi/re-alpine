@@ -46,6 +46,8 @@ AC_PROG_AWK
 AC_PROG_RANLIB
 AC_PROG_LIBTOOL
 
+AC_PROG_CXX
+
 AC_PATH_PROG(AR, ar, ar)
 AC_PATH_PROG(RM, rm, rm)
 AC_PATH_PROG(CP, cp, cp)
@@ -580,10 +582,25 @@ AC_ARG_WITH(local-password-cache,
 
 dnl Particular os-specific credential cache?
 AC_ARG_WITH(local-password-cache-method,
- AC_HELP_STRING([--with-local-password-cache-method],[OS-specific credential cache (OSX=APPLEKEYCHAIN, Windows=WINCRED)]),
+ AC_HELP_STRING([--with-local-password-cache-method],[OS-specific credential cache (OSX=APPLEKEYCHAIN, Windows=WINCRED, KDE=KWALLET)]),
    [
      alpine_os_credential_cache_method=$withval
    ])
+
+case $alpine_os_credential_cache_method in
+    KWALLET)
+     AC_DEFINE([LOCAL_PASSWD_CACHE], [1], [Use OS-specific credential cache])
+     AC_DEFINE([KWALLET], [1], [Use the KDE KWallet password cache ])
+     dnl XXX: This is what works for dbus on my Slackware64 13.0 system.  
+     CXXFLAGS="$CXXFLAGS -I/usr/include/dbus-1.0 -I/usr/lib64/dbus-1.0/include"
+     dnl XXX: It should probably be something like this: 
+     dnl CXXFLAGS="$CXXFLAGS $($PKG_CONFIG --cflags dbus-1)"
+     dnl The libs, OTOH, should be good for most any KDE4 install.  However, 
+     dnl I need to figure out the pkg-config way of specifying these.  Check 
+     dnl subversion's configure.ac?
+     LIBS="$LIBS -ldbus-1 -lQtCore -lQtDBus -lQtGui -lkdecore -lkdeui"
+     ;;
+esac
 
 if test -n "$alpine_PASSFILE" ; then
   case $alpine_os_credential_cache in
