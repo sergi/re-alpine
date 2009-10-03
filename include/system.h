@@ -374,19 +374,21 @@ typedef int gid_t;
 
 #endif /* _WINDOWS */
 
-
-#if defined(PASSFILE) && defined(APPLEKEYCHAIN)
-#  error "Cant define both PASSFILE and APPLEKEYCHAIN"
+/* Check obvious password cache conflicts */
+#if defined(PASSFILE) && \
+    (defined(APPLEKEYCHAIN) || defined(WINCRED) || defined(KWALLET))
+#  error "Cant define both PASSFILE and APPLEKEYCHAIN or WINCRED or KWALLET."
 #endif
-#if defined(PASSFILE) && defined(WINCRED)
-#  error "Cant define both PASSFILE and WINCRED"
+#if (defined(APPLEKEYCHAIN) && defined(WINCRED)) || \
+    (defined(APPLEKEYCHAIN) && defined(KWALLET)) || \
+    (defined(KWALLET) && defined(WINCRED)) 
+#  error "Only one of WINCRED, APPLEKEYCHAIN or KWALLET defined at a time."
 #endif
-#if defined(APPLEKEYCHAIN) && defined(WINCRED)
-#  error "Cant define both APPLEKEYCHAIN and WINCRED"
+#if defined(APPLEKEYCHAIN) && !defined(OSX_TARGET)
+#  error "Apple Key Chain only available on MacOSX."
 #endif
-
-#if defined(PASSFILE) || defined(APPLEKEYCHAIN) || defined(WINCRED)
-# define LOCAL_PASSWD_CACHE
+#if defined(WINCRED) && !defined(_WINDOWS)
+#  error "Windows Credential Cache only available on MS Windows"
 #endif
 
 #endif /* _SYSTEM_INCLUDED */

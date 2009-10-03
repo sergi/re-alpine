@@ -808,6 +808,8 @@ PTHREAD_CFLAGS
 PTHREAD_LIBS
 PTHREAD_CC
 acx_pthread_config
+KDE4_CONFIG
+PKG_CONFIG
 alpine_interactive_spellcheck
 ISPELLPROG
 alpine_simple_spellcheck
@@ -1035,8 +1037,9 @@ with_smime_private_key_directory
 with_smime_cacert_directory
 with_default_printer
 with_passfile
-with_local_password_cache
-with_local_password_cache_method
+with_wincred
+with_apple_key_chain
+with_kwallet
 with_default_sshpath
 with_default_sshcmd
 with_ssl
@@ -1862,11 +1865,9 @@ Optional Packages:
                           Default printer (ANSI_PRINTER)
   --with-passfile=FILENAME
                           Password cache file (NOT secure, NOT recommended)
-  --without-local-password-cache
-                          Disable OS-specific password cache, if supported
-  --with-local-password-cache-method
-                          OS-specific credential cache (OSX=APPLEKEYCHAIN,
-                          Windows=WINCRED, KDE=KWALLET)
+  --with-wincred          Cache passwords in the MS Windows Credential Cache
+  --with-apple-key-chain  Cache passwords in the MacOSX Apple Key Chain
+  --with-kwallet=PATH     Cache passwords using KDE's Kwallet
   --with-default-sshpath=FILENAME
                           set default value of ssh command path (defining
                           should cause ssh to be preferred to rsh)
@@ -5318,13 +5319,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5321: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5322: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5324: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5325: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5327: output\"" >&5)
+  (eval echo "\"\$as_me:5328: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6519,7 +6520,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6522 "configure"' > conftest.$ac_ext
+  echo '#line 6523 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8376,11 +8377,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8379: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8380: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8383: \$? = $ac_status" >&5
+   echo "$as_me:8384: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8715,11 +8716,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8718: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8719: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8722: \$? = $ac_status" >&5
+   echo "$as_me:8723: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8820,11 +8821,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8823: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8824: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8827: \$? = $ac_status" >&5
+   echo "$as_me:8828: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8875,11 +8876,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8878: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8879: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8882: \$? = $ac_status" >&5
+   echo "$as_me:8883: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11675,7 +11676,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11678 "configure"
+#line 11679 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11771,7 +11772,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11774 "configure"
+#line 11775 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -15010,11 +15011,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15013: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15014: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15017: \$? = $ac_status" >&5
+   echo "$as_me:15018: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15109,11 +15110,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15112: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15113: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15116: \$? = $ac_status" >&5
+   echo "$as_me:15117: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15161,11 +15162,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15164: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15165: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15168: \$? = $ac_status" >&5
+   echo "$as_me:15169: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20296,55 +20297,323 @@ fi
 
 
 
-# Check whether --with-local-password-cache was given.
-if test "${with_local_password_cache+set}" = set; then
-  withval=$with_local_password_cache;
-     alpine_os_credential_cache=$withval
+
+
+# Check whether --with-wincred was given.
+if test "${with_wincred+set}" = set; then
+  withval=$with_wincred;
+          alpine_os_credential_cache_method=wincred
 
 fi
 
 
 
-# Check whether --with-local-password-cache-method was given.
-if test "${with_local_password_cache_method+set}" = set; then
-  withval=$with_local_password_cache_method;
-     alpine_os_credential_cache_method=$withval
+# Check whether --with-apple-key-chain was given.
+if test "${with_apple_key_chain+set}" = set; then
+  withval=$with_apple_key_chain;
+          alpine_os_credential_cache_method=applekeychain
 
 fi
 
 
-case $alpine_os_credential_cache_method in
-    KWALLET)
+
+# Check whether --with-kwallet was given.
+if test "${with_kwallet+set}" = set; then
+  withval=$with_kwallet;
+          case "$withval" in
+              no)
+                  alpine_os_credential_cache_method=""
+                  alpine_kwallet_path=""
+                  ;;
+              yes)
+                  alpine_os_credential_cache_method=kwallet
+                  alpine_kwallet_path=""
+                  ;;
+              *)
+                  alpine_os_credential_cache_method=kwallet
+                  alpine_kwallet_path=$withval
+                  ;;
+          esac
+
+fi
+
+
+
+if test -n "$alpine_PASSFILE" ; then
+    case $alpine_os_credential_cache in
+        no)
+            ;;
+        *)
+            alpine_os_credential_cache="no"
+            { $as_echo "$as_me:$LINENO: --with-passfile definition overrides OS-Specific password caching" >&5
+$as_echo "$as_me: --with-passfile definition overrides OS-Specific password caching" >&6;}
+            ;;
+    esac
+
+cat >>confdefs.h <<_ACEOF
+#define PASSFILE "$alpine_PASSFILE"
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define LOCAL_PASSWD_CACHE 1
+_ACEOF
+
+elif test -n "$alpine_os_credential_cache_method" ; then
+    alpine_os_credential_cache="yes"
 
 cat >>confdefs.h <<\_ACEOF
 #define LOCAL_PASSWD_CACHE 1
 _ACEOF
 
 
+    case "$alpine_os_credential_cache_method" in
+        wincred)
+
+cat >>confdefs.h <<\_ACEOF
+#define WINCRED 1
+_ACEOF
+
+            ;;
+        applekeychain)
+
+cat >>confdefs.h <<\_ACEOF
+#define APPLEKEYCHAIN 1
+_ACEOF
+
+            ;;
+        kwallet)
+                                                # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+{ $as_echo "$as_me:$LINENO: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_PKG_CONFIG+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+  case $PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PKG_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PKG_CONFIG=$ac_cv_path_PKG_CONFIG
+if test -n "$PKG_CONFIG"; then
+  { $as_echo "$as_me:$LINENO: result: $PKG_CONFIG" >&5
+$as_echo "$PKG_CONFIG" >&6; }
+else
+  { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+            if test -z "$PKG_CONFIG" -o ! -x "$PKG_CONFIG" ; then
+                { { $as_echo "$as_me:$LINENO: error: Missing pkg-config.  Cannot configure KWallet Support." >&5
+$as_echo "$as_me: error: Missing pkg-config.  Cannot configure KWallet Support." >&2;}
+   { (exit 1); exit 1; }; }
+            fi
+            { $as_echo "$as_me:$LINENO: checking for dbus" >&5
+$as_echo_n "checking for dbus... " >&6; }
+            if $PKG_CONFIG --exists dbus-1 ; then
+                { $as_echo "$as_me:$LINENO: result: yes" >&5
+$as_echo "yes" >&6; }
+            else
+                { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+                { { $as_echo "$as_me:$LINENO: error: Cannot find dbus. (package: dbus-1)" >&5
+$as_echo "$as_me: error: Cannot find dbus. (package: dbus-1)" >&2;}
+   { (exit 1); exit 1; }; }
+            fi
+            { $as_echo "$as_me:$LINENO: checking for QtCore, QtDBus, QtGui" >&5
+$as_echo_n "checking for QtCore, QtDBus, QtGui... " >&6; }
+            if $PKG_CONFIG --exists QtCore QtDBus QtGui ; then
+                { $as_echo "$as_me:$LINENO: result: yes" >&5
+$as_echo "yes" >&6; }
+            else
+                { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+                { { $as_echo "$as_me:$LINENO: error: Cannot find Qt. (QtCore, QtDBus and QtGui required)" >&5
+$as_echo "$as_me: error: Cannot find Qt. (QtCore, QtDBus and QtGui required)" >&2;}
+   { (exit 1); exit 1; }; }
+            fi
+            if test -n "$alpine_kwallet_path" ; then
+                KDE4_CONFIG_PATH=$PATH$PATH_SEPARATOR$alpine_kwallet_path
+            else
+                KDE4_CONFIG_PATH=$PATH
+            fi
+            { $as_echo "$as_me:$LINENO: KDE4_CONFIG_PATH: $KDE4_CONFIG_PATH" >&5
+$as_echo "$as_me: KDE4_CONFIG_PATH: $KDE4_CONFIG_PATH" >&6;}
+                        if test -n "$alpine_kwallet_path" ; then
+                { $as_echo "$as_me:$LINENO: checking for kde4-config" >&5
+$as_echo_n "checking for kde4-config... " >&6; }
+                if -x "$alpine_kwallet_path/bin/kde4-config" ; then
+                    KDE4_CONFIG=$alpine_kwallet_path/bin/kde4-config
+                    { $as_echo "$as_me:$LINENO: result: $KDE4_CONFIG" >&5
+$as_echo "$KDE4_CONFIG" >&6; }
+                else
+                    { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+                    { { $as_echo "$as_me:$LINENO: error: Cannot find kde4-config. Is your kwallet PATH correct?" >&5
+$as_echo "$as_me: error: Cannot find kde4-config. Is your kwallet PATH correct?" >&2;}
+   { (exit 1); exit 1; }; }
+                fi
+            else
+                # Extract the first word of "kde4-config", so it can be a program name with args.
+set dummy kde4-config; ac_word=$2
+{ $as_echo "$as_me:$LINENO: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_path_KDE4_CONFIG+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+  case $KDE4_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_KDE4_CONFIG="$KDE4_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_KDE4_CONFIG="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+KDE4_CONFIG=$ac_cv_path_KDE4_CONFIG
+if test -n "$KDE4_CONFIG"; then
+  { $as_echo "$as_me:$LINENO: result: $KDE4_CONFIG" >&5
+$as_echo "$KDE4_CONFIG" >&6; }
+else
+  { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+                if ! test -n "$KDE4_CONFIG" -a -x "$KDE4_CONFIG" ; then
+                    { { $as_echo "$as_me:$LINENO: error: Cannot find kde4-config.
+                                  (Try --with-kwallet=PATH_TO_KDE4, where: $PATH_TO_KDE4/bin/kde4-config)" >&5
+$as_echo "$as_me: error: Cannot find kde4-config.
+                                  (Try --with-kwallet=PATH_TO_KDE4, where: $PATH_TO_KDE4/bin/kde4-config)" >&2;}
+   { (exit 1); exit 1; }; }
+                fi
+            fi
+
+            kde4_dir="`$KDE4_CONFIG --prefix`"
+            qt_includes="`$PKG_CONFIG --cflags-only-I dbus-1 QtCore QtDBus QtGui`"
+
+            for d in `$PKG_CONFIG --cflags dbus-1 QtCore QtDBus QtGui | $GREP -o -- -D[^[:space:]]*`; do
+                CPPFLAGS="$CPPFLAGS $d"
+            done
+
+            CXXFLAGS="$CXXFLAGS -I$kde4_dir/include $qt_includes"
+
+            qt_libs="`$PKG_CONFIG --libs-only-l dbus-1 QtCore QtDBus QtGui`"
+            qt_libdirs="`$PKG_CONFIG --libs-only-L dbus-1 QtCore QtDBus QtGui`"
+            qt_libother="`$PKG_CONFIG --libs-only-other dbus-1 QtCore QtDBus QtGui`"
+            kde4_libs="-lkdecore -lkdeui"
+            kde4_libdir="-L$kde4_dir/lib`$KDE4_CONFIG --libsuffix`"
+
+            LIBS="$LIBS $qt_libs $kde4_libs"
+            LDFLAGS="$LDFLAGS $qt_libdirs $qt_libother $kde4_libdir"
+                        { $as_echo "$as_me:$LINENO: checking for KWallet support in KDE" >&5
+$as_echo_n "checking for KWallet support in KDE... " >&6; }
+            ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+            cat >conftest.$ac_ext <<_ACEOF
+
+#include <kwallet.h>
+int main()
+{KWallet::Wallet::walletList();}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 $as_test_x conftest$ac_exeext
+       }; then
+  alpine_kwallet="yes"
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	alpine_kwallet="no"
+fi
+
+rm -rf conftest.dSYM
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+            ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+            if test "$alpine_kwallet" = "yes"; then
+                { $as_echo "$as_me:$LINENO: result: yes" >&5
+$as_echo "yes" >&6; }
+            else
+                { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+                { { $as_echo "$as_me:$LINENO: error: Cannot link to KWallet libraries." >&5
+$as_echo "$as_me: error: Cannot link to KWallet libraries." >&2;}
+   { (exit 1); exit 1; }; }
+            fi
+
 cat >>confdefs.h <<\_ACEOF
 #define KWALLET 1
 _ACEOF
 
-          CXXFLAGS="$CXXFLAGS -I/usr/include/dbus-1.0 -I/usr/lib64/dbus-1.0/include"
-                              LIBS="$LIBS -ldbus-1 -lQtCore -lQtDBus -lQtGui -lkdecore -lkdeui"
-     ;;
-esac
-
-if test -n "$alpine_PASSFILE" ; then
-  case $alpine_os_credential_cache in
-    no)
-      ;;
-    *)
-      alpine_os_credential_cache="no"
-      { $as_echo "$as_me:$LINENO: --with-passfile definition overrides OS-Specific password caching" >&5
-$as_echo "$as_me: --with-passfile definition overrides OS-Specific password caching" >&6;}
-      ;;
-  esac
-
-cat >>confdefs.h <<_ACEOF
-#define PASSFILE "$alpine_PASSFILE"
-_ACEOF
-
+            ;;
+        gnomekeyring)
+                        { { $as_echo "$as_me:$LINENO: error: Gnome Keyring support not implemented." >&5
+$as_echo "$as_me: error: Gnome Keyring support not implemented." >&2;}
+   { (exit 1); exit 1; }; }
+                        ;;
+    esac
 fi
 
 
@@ -29357,17 +29626,6 @@ cat >>confdefs.h <<\_ACEOF
 #define OSX_TARGET 1
 _ACEOF
 
-    case "$alpine_os_credential_cache" in
-      no)
-	;;
-      *)
-
-cat >>confdefs.h <<\_ACEOF
-#define APPLEKEYCHAIN 1
-_ACEOF
-
-	;;
-    esac
     { $as_echo "$as_me:$LINENO: checking for pam_start in -lpam" >&5
 $as_echo_n "checking for pam_start in -lpam... " >&6; }
 if test "${ac_cv_lib_pam_pam_start+set}" = set; then

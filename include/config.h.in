@@ -624,6 +624,9 @@
 /* Version number of package */
 #undef VERSION
 
+/* Use Windows Credential Cache for passwords */
+#undef WINCRED
+
 /* Windows is just too different */
 #undef _WINDOWS
 

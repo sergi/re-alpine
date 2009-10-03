@@ -574,44 +574,163 @@ AC_ARG_WITH(passfile,
     ])
 
 dnl os-specific credential cache?
-AC_ARG_WITH(local-password-cache,
- AC_HELP_STRING([--without-local-password-cache],[Disable OS-specific password cache, if supported]),
-   [
-     alpine_os_credential_cache=$withval
-   ])
+dnl AC_ARG_WITH(local-password-cache,
+dnl  AC_HELP_STRING([--without-local-password-cache],[Disable OS-specific password cache, if supported]),
+dnl    [
+dnl      alpine_os_credential_cache=$withval
+dnl    ])
 
 dnl Particular os-specific credential cache?
-AC_ARG_WITH(local-password-cache-method,
- AC_HELP_STRING([--with-local-password-cache-method],[OS-specific credential cache (OSX=APPLEKEYCHAIN, Windows=WINCRED, KDE=KWALLET)]),
-   [
-     alpine_os_credential_cache_method=$withval
-   ])
+dnl AC_ARG_WITH(local-password-cache-method,
+dnl dnl  AC_HELP_STRING([--with-local-password-cache-method],[OS-specific credential cache (OSX=APPLEKEYCHAIN, Windows=WINCRED, KDE=KWALLET)]),
+dnl    [
+dnl      alpine_os_credential_cache_method=$withval
+dnl    ])
 
-case $alpine_os_credential_cache_method in
-    KWALLET)
-     AC_DEFINE([LOCAL_PASSWD_CACHE], [1], [Use OS-specific credential cache])
-     AC_DEFINE([KWALLET], [1], [Use the KDE KWallet password cache ])
-     dnl XXX: This is what works for dbus on my Slackware64 13.0 system.  
-     CXXFLAGS="$CXXFLAGS -I/usr/include/dbus-1.0 -I/usr/lib64/dbus-1.0/include"
-     dnl XXX: It should probably be something like this: 
-     dnl CXXFLAGS="$CXXFLAGS $($PKG_CONFIG --cflags dbus-1)"
-     dnl The libs, OTOH, should be good for most any KDE4 install.  However, 
-     dnl I need to figure out the pkg-config way of specifying these.  Check 
-     dnl subversion's configure.ac?
-     LIBS="$LIBS -ldbus-1 -lQtCore -lQtDBus -lQtGui -lkdecore -lkdeui"
-     ;;
-esac
+AC_ARG_WITH(wincred, 
+    AC_HELP_STRING([--with-wincred],[Cache passwords in the MS Windows Credential Cache]),
+        [
+          alpine_os_credential_cache_method=wincred
+        ])
 
+AC_ARG_WITH(apple-key-chain,
+    AC_HELP_STRING([--with-apple-key-chain],[Cache passwords in the MacOSX Apple Key Chain]),
+        [
+          alpine_os_credential_cache_method=applekeychain
+        ])
+          
+AC_ARG_WITH(kwallet,
+    AC_HELP_STRING([--with-kwallet[=PATH]], [Cache passwords using KDE's Kwallet]),
+        [
+          case "$withval" in
+              no)
+                  alpine_os_credential_cache_method=""
+                  alpine_kwallet_path=""
+                  ;;
+              yes)
+                  alpine_os_credential_cache_method=kwallet
+                  alpine_kwallet_path=""
+                  ;;
+              *)
+                  alpine_os_credential_cache_method=kwallet
+                  alpine_kwallet_path=$withval
+                  ;;
+          esac
+        ])
+
+dnl Gnome Keychain is currently unimplemented.  
+dnl        AC_ARG_WITH(gnome-keyring,
+dnl    AC_HELP_STRING([--with-gnome-keyring], [Cache passords in the Gnome Keyring]),
+dnl        [
+dnl          alpine_os_credential_cache_method=gnomekeyring
+dnl        ])
+          
 if test -n "$alpine_PASSFILE" ; then
-  case $alpine_os_credential_cache in
-    no)
-      ;;
-    *)
-      alpine_os_credential_cache="no"
-      AC_MSG_NOTICE([--with-passfile definition overrides OS-Specific password caching])
-      ;;
-  esac
-  AC_DEFINE_UNQUOTED([PASSFILE], "$alpine_PASSFILE", [Password cache file (NOT secure. NOT recommended)])
+    case $alpine_os_credential_cache in
+        no)
+            ;;
+        *)
+            alpine_os_credential_cache="no"
+            AC_MSG_NOTICE([--with-passfile definition overrides OS-Specific password caching])
+            ;;
+    esac
+    AC_DEFINE_UNQUOTED([PASSFILE], "$alpine_PASSFILE", [Password cache file (NOT secure. NOT recommended)])
+    AC_DEFINE([LOCAL_PASSWD_CACHE], [1], [Use OS-specific credential cache])
+elif test -n "$alpine_os_credential_cache_method" ; then
+    alpine_os_credential_cache="yes"
+    AC_DEFINE([LOCAL_PASSWD_CACHE], [1], [Use OS-specific credential cache])
+
+    case "$alpine_os_credential_cache_method" in
+        wincred)
+            AC_DEFINE([WINCRED], [1], [Use Windows Credential Cache for passwords])
+            ;;
+        applekeychain)
+            AC_DEFINE([APPLEKEYCHAIN], [1], [Use Apple OS X key chain for credential caching])
+            ;;
+        kwallet)
+            dnl A lot of checking for a small feature...  Do some sanity checks, and try to 
+            dnl setup the CXXFLAGS and LIBS in the most portable way possible.  Much of this 
+            dnl is cribbed from Subversion's kwallet autoconf macros.
+            AC_PATH_PROG(PKG_CONFIG, pkg-config)
+            if test -z "$PKG_CONFIG" -o ! -x "$PKG_CONFIG" ; then
+                AC_MSG_ERROR([Missing pkg-config.  Cannot configure KWallet Support.])
+            fi
+            AC_MSG_CHECKING([for dbus])
+            if $PKG_CONFIG --exists dbus-1 ; then
+                AC_MSG_RESULT([yes])
+            else
+                AC_MSG_RESULT([no])
+                AC_MSG_ERROR([Cannot find dbus. (package: dbus-1)])
+            fi
+            AC_MSG_CHECKING([for QtCore, QtDBus, QtGui])
+            if $PKG_CONFIG --exists QtCore QtDBus QtGui ; then
+                AC_MSG_RESULT([yes])
+            else
+                AC_MSG_RESULT([no])
+                AC_MSG_ERROR([Cannot find Qt. (QtCore, QtDBus and QtGui required)])
+            fi
+            if test -n "$alpine_kwallet_path" ; then
+                KDE4_CONFIG_PATH=[$PATH$PATH_SEPARATOR$alpine_kwallet_path]
+            else
+                KDE4_CONFIG_PATH=$PATH
+            fi
+            if test -n "$alpine_kwallet_path" ; then
+                AC_MSG_CHECKING([for kde4-config])
+                if -x "$alpine_kwallet_path/bin/kde4-config" ; then
+                    KDE4_CONFIG=$alpine_kwallet_path/bin/kde4-config
+                    AC_MSG_RESULT([$KDE4_CONFIG])
+                else
+                    AC_MSG_RESULT([no])
+                    AC_MSG_ERROR([Cannot find kde4-config. Is your kwallet PATH correct?])
+                fi
+            else
+                AC_PATH_PROG(KDE4_CONFIG, kde4-config)
+                if ! test -n "$KDE4_CONFIG" -a -x "$KDE4_CONFIG" ; then
+                    AC_MSG_ERROR([Cannot find kde4-config. 
+                                  (Try --with-kwallet=PATH_TO_KDE4, where: $PATH_TO_KDE4/bin/kde4-config)])
+                fi
+            fi
+            
+            kde4_dir="`$KDE4_CONFIG --prefix`"
+            qt_includes="`$PKG_CONFIG --cflags-only-I dbus-1 QtCore QtDBus QtGui`"
+
+            for d in [`$PKG_CONFIG --cflags dbus-1 QtCore QtDBus QtGui | $GREP -o -- -D[^[:space:]]*`]; do
+                CPPFLAGS="$CPPFLAGS $d"
+            done
+
+            CXXFLAGS="$CXXFLAGS -I$kde4_dir/include $qt_includes"
+
+            qt_libs="`$PKG_CONFIG --libs-only-l dbus-1 QtCore QtDBus QtGui`"
+            qt_libdirs="`$PKG_CONFIG --libs-only-L dbus-1 QtCore QtDBus QtGui`"
+            qt_libother="`$PKG_CONFIG --libs-only-other dbus-1 QtCore QtDBus QtGui`"
+            kde4_libs="-lkdecore -lkdeui"
+            kde4_libdir="-L$kde4_dir/lib`$KDE4_CONFIG --libsuffix`"
+
+            LIBS="$LIBS $qt_libs $kde4_libs"
+            LDFLAGS="$LDFLAGS $qt_libdirs $qt_libother $kde4_libdir"
+            dnl one final check to make sure KWallet is installed and accessible:
+            AC_MSG_CHECKING([for KWallet support in KDE])
+            AC_LANG(C++)
+            AC_LINK_IFELSE([
+#include <kwallet.h>
+int main()
+{KWallet::Wallet::walletList();}], alpine_kwallet="yes", alpine_kwallet="no")
+            AC_LANG(C)
+            if test "$alpine_kwallet" = "yes"; then 
+                AC_MSG_RESULT([yes])
+            else
+                AC_MSG_RESULT([no])
+                AC_MSG_ERROR([Cannot link to KWallet libraries.])
+            fi
+            dnl and Bob's your Uncle.
+            AC_DEFINE([KWALLET], [1], [Use the KDE KWallet password cache ])
+            ;;
+        gnomekeyring)
+            dnl Gnome Keyring not supported yet, but should be.
+            AC_MSG_ERROR([Gnome Keyring support not implemented.])
+            dnl AC_DEFINE([GNOMEKEYRING], [1], [Use the Gnome Keyring password cache ])
+            ;;
+    esac
 fi
 
 dnl set DF_SSHPATH?
@@ -1390,13 +1509,14 @@ case "$host" in
     AM_CFLAGS="$AM_CFLAGS -Dbsd"
     dnl SEE include/system.h
     AC_DEFINE([OSX_TARGET],[1],[OSX TARGET])
-    case "$alpine_os_credential_cache" in
-      no)
-	;;
-      *)
-	AC_DEFINE([APPLEKEYCHAIN], [1], [Use Apple OS X key chain for credential caching])
-	;;
-    esac
+dnl this is set above with the rest of credential cache options
+dnl    case "$alpine_os_credential_cache" in
+dnl      no)
+dnl	;;
+dnl      *)
+dnl	AC_DEFINE([APPLEKEYCHAIN], [1], [Use Apple OS X key chain for credential caching])
+dnl	;;
+dnl    esac
     AC_CHECK_LIB(pam, pam_start,
       [
         alpine_c_client_target="oxp"
