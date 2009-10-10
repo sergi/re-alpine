@@ -2831,6 +2831,8 @@ feature_list(int index)
 	 F_SEND_WO_CONFIRM, h_config_send_wo_confirm, PREF_SEND, 0},
 	{"strip-whitespace-before-send", "Strip Whitespace Before Sending",
 	 F_STRIP_WS_BEFORE_SEND, h_config_strip_ws_before_send, PREF_SEND, 0},
+ 	{"enable-topal-hack", "Enable Topal hack for OpenPGP/MIME messages",
+ 	 F_ENABLE_TOPAL_HACK, h_config_enable_topal_hack, PREF_HIDDEN, 0},
 	{"warn-if-blank-fcc", "Warn if Blank Fcc",
 	 F_WARN_ABOUT_NO_FCC, h_config_warn_if_fcc_blank, PREF_SEND, 0},
 	{"warn-if-blank-subject", "Warn if Blank Subject",

@@ -4039,6 +4039,23 @@ pine_send(ENVELOPE *outgoing, struct mail_bodystruct **body,
     pbf = save_previous_pbuf;
     g_rolenick = NULL;
 
+    /* Topal: Unmangle the body types. */
+    if ((*body)->type == TYPEMULTIPART 
+	&& (*body)->topal_hack == 1) {
+      /* This was a single part message which Topal mangled. */
+      dprint((9, "Topal: unmangling single part message\n"));
+      (*body)->type = TYPETEXT;
+    }
+    if ((*body)->type == TYPEMULTIPART
+	&& (*body)->topal_hack != 1
+	&& (*body)->nested.part->body.type == TYPEMULTIPART
+	&& (*body)->nested.part->body.topal_hack == 1) {
+      /* Topal mangled a multipart message.  So the first nested part
+	 is really TYPETEXT. */
+      dprint((9, "Topal: unmangling first part of multipart message\n"));
+      (*body)->nested.part->body.type = TYPETEXT;
+    }
+
     dprint((4, "=== send returning ===\n"));
 }
 
@@ -5365,22 +5382,50 @@ filter_message_text(char *fcmd, ENVELOPE *outgoing, struct mail_bodystruct *body
 
 				rfc822_parse_content_header(nb,
 				    (char *) ucase((unsigned char *) buf+8),s);
+				/* Topal: We're working on the first
+				   text segment of the message.  If
+				   the filter returns something that
+				   isn't TYPETEXT, then we need to
+				   pretend (later on) that this is in
+				   fact a TYPETEXT, because Topal has
+				   already encoded it....
+
+				   Original code path first, then an
+				   alternate path.
+				*/
 				if(nb->type == TYPETEXT
 				   && nb->subtype
 				   && (!b->subtype 
 				       || strucmp(b->subtype, nb->subtype))){
-				    if(b->subtype)
-				      fs_give((void **) &b->subtype);
-
+				  if(b->subtype)
+				    fs_give((void **) &b->subtype);
+				  
+				  b->subtype  = nb->subtype;
+				  nb->subtype = NULL;
+				  
+				  mail_free_body_parameter(&b->parameter);
+				  b->parameter = nb->parameter;
+				  nb->parameter = NULL;
+				  mail_free_body_parameter(&nb->parameter);
+				} 
+				else if(F_ON(F_ENABLE_TOPAL_HACK, ps_global)){
+				  /* Perhaps the type isn't TYPETEXT,
+				     and the hack is requested.  So,
+				     let's mess with the types. */
+				  if(nb->type != TYPETEXT){
+				    b->type     = nb->type;
 				    b->subtype  = nb->subtype;
 				    nb->subtype = NULL;
-				      
+				    
+				    dprint((9, "Topal: mangling body!\n"));
 				    mail_free_body_parameter(&b->parameter);
 				    b->parameter = nb->parameter;
 				    nb->parameter = NULL;
 				    mail_free_body_parameter(&nb->parameter);
+				    b->topal_hack = 1;
+				  }
 				}
-
+				/* Topal: end */
 				mail_free_body(&nb);
 			    }
 
