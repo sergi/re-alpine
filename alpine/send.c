@@ -6038,7 +6038,8 @@ create_message_body(struct mail_bodystruct **b, PATMT *attach, int flow_it)
 	 * If we've been given a text/* attachment, and there isn't
 	 * already a character set parameter, assume it's UTF-8.
 	 */
-	if (p->body.type == TYPETEXT
+	if (F_ON(F_FORCE_TEXT_ATTACHMENT_UTF8, ps_global)
+	    && p->body.type == TYPETEXT
 	    && !(parameter_val(p->body.parameter, "charset"))) {
 	  set_parameter(&p->body.parameter, "charset", "UTF-8");
 	}
