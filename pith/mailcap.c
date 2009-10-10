@@ -582,8 +582,18 @@ mc_get_command(int type, char *subtype, BODY *body,
 	 *       typically two scans through the check_extension
 	 *       mechanism, the mailcap entry now takes precedence.
 	 */
-	if((fname = get_filename_parameter(NULL, 0, body, &e2b.from.ext)) != NULL
-	   && e2b.from.ext && e2b.from.ext[0]){
+	/* Topal hack 2 */
+	fname = get_filename_parameter(NULL, 0, body, &e2b.from.ext);
+	if (F_ON(F_ENABLE_TOPAL_HACK2, ps_global)
+	    && fname == NULL) {
+	  if (body->type == TYPEMULTIPART &&
+	      ((body->subtype && !strucmp(body->subtype, "signed"))
+	       ||(body->subtype && !strucmp(body->subtype, "encrypted"))))
+	    fname = cpystr("openpgp.msg");
+	}
+	
+	if(fname != NULL
+         && e2b.from.ext && e2b.from.ext[0]){
 	    if(strlen(e2b.from.ext) < sizeof(tmp_ext) - 2){
 		strncpy(ext = tmp_ext, e2b.from.ext - 1, sizeof(tmp_ext)); /* remember it */
 		tmp_ext[sizeof(tmp_ext)-1] = '\0';

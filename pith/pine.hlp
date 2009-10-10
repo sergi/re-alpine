@@ -3274,6 +3274,7 @@ There are also additional details on
 <li><a href="h_config_strip_sigdashes">FEATURE: <!--#echo var="FEAT_strip-from-sigdashes-on-reply"--></a>
 <li><a href="h_config_strip_ws_before_send">FEATURE: <!--#echo var="FEAT_strip-whitespace-before-send"--></a> 
 <li><a href="h_config_enable_topal_hack">FEATURE: <!--#echo var="FEAT_enable-topal-hack"--></a>
+<li><a href="h_config_enable_topal_hack2">FEATURE: <!--#echo var="FEAT_enable-topal-hack2"--></a>
 <li><a href="h_config_quells_asterisks">FEATURE: <!--#echo var="FEAT_suppress-asterisks-in-password-prompt"--></a>
 <li><a href="h_config_quell_attach_ext_warn">FEATURE: <!--#echo var="FEAT_quell-attachment-extension-warn"--></a>
 <li><a href="h_config_quell_attach_extra_prompt">FEATURE: <!--#echo var="FEAT_quell-attachment-extra-prompt"--></a>
@@ -28414,6 +28415,16 @@ of flowed text.
 This feature allows Topal (and other sending-filters) to change the
 MIME type of the email.  This is potentially dangerous because it
 pretends that multipart emails are plain emails.
+====== h_config_enable_topal_hack2 =====
+<HTML>
+<HEAD>
+<TITLE>FEATURE: <!--#echo var="FEAT_enable-topal-hack2"--></TITLE>
+</HEAD>
+<BODY>
+<H1>FEATURE: <!--#echo var="FEAT_enable-topal-hack2"--></H1>
+<P>
+This feature enables a nasty hack that allows Topal and other MIME
+viewers to access multipart/* email bodies. 
 <P>
 &lt;End of help on this topic&gt;
 </BODY>
