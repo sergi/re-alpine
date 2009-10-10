@@ -584,7 +584,8 @@ mc_get_command(int type, char *subtype, BODY *body,
 	 */
 	/* Topal hack 2 */
 	fname = get_filename_parameter(NULL, 0, body, &e2b.from.ext);
-	if (fname == NULL) {
+	if (F_ON(F_ENABLE_TOPAL_HACK2, ps_global)
+	    && fname == NULL) {
 	  if (body->type == TYPEMULTIPART &&
 	      ((body->subtype && !strucmp(body->subtype, "signed"))
 	       ||(body->subtype && !strucmp(body->subtype, "encrypted"))))

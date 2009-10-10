@@ -2712,7 +2712,11 @@ BODY *mail_body (MAILSTREAM *stream,unsigned long msgno,unsigned char *section)
   BODY *b = NIL;
   PART *pt;
   unsigned long i;
-  /* Topal hack 2 */
+  /* Topal hack 2: not sure why we end up doing this.  
+     FIXME: how can we only do the next mail_fetchstructure only if 
+        F_ON(F_ENABLE_TOPAL_HACK2, ps_global)
+     ?  But we can't see ps_global here.
+   */
   mail_fetchstructure (stream,msgno,&b);
 				/* make sure have a body */
   if (section && *section && mail_fetchstructure (stream,msgno,&b) && b)
