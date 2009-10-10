@@ -2837,6 +2837,8 @@ feature_list(int index)
 	 F_WARN_ABOUT_NO_SUBJECT, h_config_warn_if_subj_blank, PREF_SEND, 0},
 	{"warn-if-blank-to-and-cc-and-newsgroups", "Warn if Blank To and CC and Newsgroups",
 	 F_WARN_ABOUT_NO_TO_OR_CC, h_config_warn_if_no_to_or_cc, PREF_SEND, 0},
+	{"force-text-attachment-to-utf8", "Text attachments without charset get UTF-8",
+	 F_FORCE_TEXT_ATTACHMENT_UTF8, h_config_force_text_attachment_utf8, PREF_SEND, 0},
 
 /* Folder */
 	{"combined-folder-display", NULL,
