@@ -107,7 +107,7 @@ long       post_rfc822_output(char *, ENVELOPE *, BODY *, soutr_t, TCPSTREAM *, 
 int        l_flush_net(int);
 int        l_putc(int);
 int	   pine_write_header_line(char *, char *, STORE_S *);
-int	   pine_write_params(PARAMETER *, STORE_S *);
+int	   pine_write_params(PARAMETER *, STORE_S *, BODY *);
 char      *tidy_smtp_mess(char *, char *, char *, size_t);
 int	   lmc_body_header_line(char *, int);
 int	   lmc_body_header_finish(void);
@@ -1783,7 +1783,9 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
     /* set up counts and such to keep track sent percentage */
     send_bytes_sent = 0;
     gf_filter_init();				/* zero piped byte count, 'n */
+    dprint((1, "Topal: HERE 1!\n"));
     send_bytes_to_send = send_body_size(body);	/* count body bytes	     */
+    dprint((1, "Topal: HERE 2!\n"));
     ps_global->c_client_error[0] = error_buf[0] = '\0';
     we_cancel = busy_cue(_("Sending mail"),
 			 send_bytes_to_send ? sent_percent : NULL, 0);
@@ -1800,6 +1802,9 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
 
 #endif
 
+    dprint((1, "Topal: HERE 3!\n"));
+
+
     /*
      * If the user's asked for it, and we find that the first text
      * part (attachments all get b64'd) is non-7bit, ask for 8BITMIME.
@@ -1807,6 +1812,7 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
     if(F_ON(F_ENABLE_8BIT, ps_global) && (bp = first_text_8bit(body)))
        smtp_opts |= SOP_8BITMIME;
 
+    dprint((1, "Topal: HERE 3.1!\n"));
 #ifdef	DEBUG
 #ifndef DEBUGJOURNAL
     if(debug > 5 || (flags & CM_VERBOSE))
@@ -1870,17 +1876,21 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
 	  }
     }
 
+    dprint((1, "Topal: HERE 4!\n"));
+
     /*
      * Install our rfc822 output routine 
      */
     sending_hooks.rfc822_out = mail_parameters(NULL, GET_RFC822OUTPUT, NULL);
     (void)mail_parameters(NULL, SET_RFC822OUTPUT, (void *)post_rfc822_output);
+    dprint((1, "Topal: HERE 5!\n"));
 
     /*
      * Allow for verbose posting
      */
     (void) mail_parameters(NULL, SET_SMTPVERBOSE,
 			   (void *) pine_smtp_verbose_out);
+    dprint((1, "Topal: HERE 6!\n"));
 
     /*
      * We do this because we want mm_log to put the error message into
@@ -1924,6 +1934,7 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
 
     ps_global->noshow_error = 0;
 
+    dprint((1, "Topal: HERE 7!\n"));
     TIME_STAMP("smtp open", 1);
     if(sending_stream){
 	unsigned short save_encoding, added_encoding;
@@ -2505,9 +2516,12 @@ write_fcc(char *fcc, CONTEXT_S *fcc_cntxt, STORE_S *tmp_storage,
 BODY *
 first_text_8bit(struct mail_bodystruct *body)
 {
-    if(body->type == TYPEMULTIPART)	/* advance to first contained part */
+  /* Be careful of Topal changes... */
+    if(body->type == TYPEMULTIPART
+       && body->topal_hack != 1)	/* advance to first contained part */
       body = &body->nested.part->body;
 
+    /* Topal: this bit might not be correct, now. */
     return((body->type == TYPETEXT && body->encoding != ENC7BIT)
 	     ? body : NULL);
 }
@@ -2880,6 +2894,7 @@ pine_encode_body (struct mail_bodystruct *body)
     char *freethis;
 
     case TYPEMULTIPART:		/* multi-part */
+      if (body->topal_hack != 1) { /* But only if Topal hasn't touched it! */
       if(!(freethis=parameter_val(body->parameter, "BOUNDARY"))){
 	  char tmp[MAILTMPLEN];	/* make cookie not in BASE64 or QUOTEPRINT*/
 
@@ -2895,6 +2910,7 @@ pine_encode_body (struct mail_bodystruct *body)
       part = body->nested.part;	/* encode body parts */
       do pine_encode_body (&part->body);
       while ((part = part->next) != NULL);	/* until done */
+      }
       break;
 
     case TYPETEXT :
@@ -4253,7 +4269,9 @@ pine_rfc822_output_body(struct mail_bodystruct *body, soutr_t f, void *s)
 
     dprint((4, "-- pine_rfc822_output_body: %d\n",
 	       body ? body->type : 0));
-    if(body->type == TYPEMULTIPART) {   /* multipart gets special handling */
+    if(body->type == TYPEMULTIPART
+       && body->topal_hack != 1) {   /* multipart gets special handling, 
+					unless Topal messed with it */
 	part = body->nested.part;	/* first body part */
 					/* find cookie */
 	for (param = body->parameter; param && !cookie; param = param->next)
@@ -4343,10 +4361,14 @@ pine_rfc822_output_body(struct mail_bodystruct *body, soutr_t f, void *s)
 	 * BEFORE applying any encoding (rfc1341: appendix G)...
 	 * NOTE: almost all filters expect CRLF newlines 
 	 */
-	if(body->type == TYPETEXT
-	   && body->encoding != ENCBASE64
+	if(((body->type == TYPETEXT
+	     && body->encoding != ENCBASE64)
+	    /* Or if Topal mucked with it... */
+	    | (body->type == TYPEMULTIPART && body->topal_hack == 1))
 	   && !so_attr((STORE_S *) body->contents.text.data, "rawbody", NULL)){
-	    gf_link_filter(gf_local_nvtnl, NULL);
+	  if(body->topal_hack == 1) 
+	    dprint((9, "Topal: Canonical conversion, although Topal has mangled...\n"));
+	  gf_link_filter(gf_local_nvtnl, NULL);
 	}
 
 	switch (body->encoding) {	/* all else needs filtering */
@@ -4448,7 +4470,7 @@ pine_write_body_header(struct mail_bodystruct *body, soutr_t f, void *s)
 	  return(pwbh_finish(0, so));
 	    
 	if(body->parameter){
-	    if(!pine_write_params(body->parameter, so))
+	    if(!pine_write_params(body->parameter, so, body))
 	      return(pwbh_finish(0, so));
 	}
 	else if(!so_puts(so, "; CHARSET=US-ASCII"))
@@ -4527,7 +4549,7 @@ pine_write_body_header(struct mail_bodystruct *body, soutr_t f, void *s)
 		 && so_puts(so, body->disposition.type)))
 	      return(pwbh_finish(0, so));
 
-	    if(!pine_write_params(body->disposition.parameter, so))
+	    if(!pine_write_params(body->disposition.parameter, so, body))
 	      return(pwbh_finish(0, so));	      
 
 	    if(!so_puts(so, "\015\012"))
@@ -4589,7 +4611,7 @@ pine_write_header_line(char *hdr, char *val, STORE_S *so)
  * pine_write_param - convert, encode and write MIME header-field parameters
  */
 int
-pine_write_params(PARAMETER *param, STORE_S *so)
+pine_write_params(PARAMETER *param, STORE_S *so, BODY *body)
 {	      
     for(; param; param = param->next){
 	int   rv;
@@ -4598,9 +4620,17 @@ pine_write_params(PARAMETER *param, STORE_S *so)
 
 	cs = posting_characterset(param->value, NULL, HdrText);
 	cv = utf8_to_charset(param->value, cs, 0);
-	rv = (so_puts(so, "; ")
-	      && rfc2231_output(so, param->attribute, cv, (char *) tspecials, cs));
-
+	if (body->topal_hack == 1
+	    && !struncmp(param->attribute, "protocol", 9)) {
+	  /* Did Topal introduce more parameters? */
+	  dprint((9, "Topal: parameter encoding of protocol, with Topal hack\n"));
+	  rv = (so_puts(so, "; \015\012\011")
+		&& rfc2231_output(so, param->attribute, cv, (char *) tspecials, cs));
+	}
+	else
+	  rv = (so_puts(so, "; ")
+		&& rfc2231_output(so, param->attribute, cv, (char *) tspecials, cs));
+	
 	if(cv && cv != param->value)
 	  fs_give((void **) &cv);
 
@@ -4707,7 +4737,9 @@ send_body_size(struct mail_bodystruct *body)
     long  l = 0L;
     PART *part;
 
-    if(body->type == TYPEMULTIPART) {   /* multipart gets special handling */
+    if(body->type == TYPEMULTIPART 
+       && body->topal_hack != 1) {   /* multipart gets special handling 
+					but again, be careful of Topal */
 	part = body->nested.part;	/* first body part */
 	do				/* for each part */
 	  l += send_body_size(&part->body);

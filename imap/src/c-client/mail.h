@@ -775,6 +775,7 @@ BODY {
     unsigned long bytes;	/* size of text in octets */
   } size;
   char *md5;			/* MD5 checksum */
+  unsigned short topal_hack;    /* set to 1 if topal has wrecked the sending */
   void *sparep;			/* spare pointer reserved for main program */
 };
 
