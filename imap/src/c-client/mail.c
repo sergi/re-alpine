@@ -2712,6 +2712,8 @@ BODY *mail_body (MAILSTREAM *stream,unsigned long msgno,unsigned char *section)
   BODY *b = NIL;
   PART *pt;
   unsigned long i;
+  /* Topal hack 2 */
+  mail_fetchstructure (stream,msgno,&b);
 				/* make sure have a body */
   if (section && *section && mail_fetchstructure (stream,msgno,&b) && b)
     while (*section) {		/* find desired section */
