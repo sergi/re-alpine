@@ -3309,6 +3309,7 @@ There are also additional details on
 <li><a href="h_config_warn_if_fcc_blank">FEATURE: <!--#echo var="FEAT_warn-if-blank-fcc"--></a>
 <li><a href="h_config_warn_if_subj_blank">FEATURE: <!--#echo var="FEAT_warn-if-blank-subject"--></a>
 <li><a href="h_config_warn_if_no_to_or_cc">FEATURE: <!--#echo var="FEAT_warn-if-blank-to-and-cc-and-newsgroups"--></a>
+<li><a href="h_config_force_text_attachment_utf8">FEATURE: <!--#echo var="FEAT_force-text-attachment-utf8"--></a>
 <li><a href="h_mainhelp_filtering">Filtering</a>
 <li><a href="h_finding_help">Finding more information and requesting help</a>
 <li><a href="h_common_flag">Flag Command</a>
@@ -32849,6 +32850,19 @@ blank To, Cc, and Newsgroups headers even if this feature is set.
 <UL>   
 <LI><A HREF="h_finding_help">Finding more information and requesting help</A>
 </UL><P>
+&lt;End of help on this topic&gt;
+</BODY>
+</HTML>
+====== h_config_force_text_attachment_utf8 =====
+<HTML>
+<HEAD>
+<TITLE>FEATURE: <!--#echo var="FEAT_force-text-attachment-utf8"--></TITLE>
+</HEAD>
+<BODY>
+<H1>FEATURE: <!--#echo var="FEAT_force-text-attachment-utf8"--></H1>
+
+This feature affects Alpine's behavior when you attach a text file (MIME type text/*).  If this option is set and no character set is automatically associated with the file, then it will be set to UTF-8.
+<P>
 &lt;End of help on this topic&gt;
 </BODY>
 </HTML>

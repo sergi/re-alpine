@@ -6034,6 +6034,16 @@ create_message_body(struct mail_bodystruct **b, PATMT *attach, int flow_it)
 	    set_charset_possibly_to_ascii(&p->body,  ps_global->keyboard_charmap);
 	}
 
+	/*
+	 * If we've been given a text/* attachment, and there isn't
+	 * already a character set parameter, assume it's UTF-8.
+	 */
+	if (F_ON(F_FORCE_TEXT_ATTACHMENT_UTF8, ps_global)
+	    && p->body.type == TYPETEXT
+	    && !(parameter_val(p->body.parameter, "charset"))) {
+	  set_parameter(&p->body.parameter, "charset", "UTF-8");
+	}
+
 	so_release((STORE_S *)p->body.contents.text.data);
 
 	if(pa->description)	/* encoding happens when msg written */
