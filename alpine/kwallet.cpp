@@ -118,14 +118,19 @@ get_wallet_name(void)
 static WId
 get_wid(void)
 {
+  FILE *logf = NULL;
   WId wid = 1;
   const char *wid_env_string = getenv("WINDOWID");
+  logf = fopen("alpine.log", "a");
   if (wid_env_string) {
       long wid_env = atol(wid_env_string);
       if (wid_env != 0) {
           wid = wid_env;
       }
   }
+  logf && fprintf(logf, "WId: %d, env:WINDOWID: %s\n", wid, wid_env_string);
+
+  fclose(logf);
 
   return wid;
 }
@@ -135,7 +140,7 @@ get_wid(void)
 static KWallet::Wallet *
 get_wallet(QString wallet_name)
 {
-  return KWallet::Wallet::openWallet(wallet_name, KWallet::Wallet::Synchronous);
+  return KWallet::Wallet::openWallet(wallet_name, get_wid(), KWallet::Wallet::Synchronous);
 }
 
 /* Implementation of svn_auth__password_get_t that retrieves
