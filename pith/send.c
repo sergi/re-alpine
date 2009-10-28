@@ -216,6 +216,24 @@ static NETDRIVER piped_io = {
 #define PH_MAXHASH	(1<<(PH_HASHBITS))
 
 
+
+#if 1
+extern void
+DumpBody(char const * title, BODY * b)
+{
+    PARAMETER * p;
+
+    dprint((3,"%s: body %p, type %u/%s, encoding %u",title,b,b->type,b->subtype,b->encoding));
+    for (p = b->parameter; p != NULL; p = p->next) {
+	dprint((3,"  parameter %s=%s",p->attribute,p->value));
+    }
+    dprint((3,"  mime @%lu %p [%lu]",b->mime.offset,b->mime.text.data,b->mime.text.size));
+    dprint((3,"  contents @%lu %p [%lu]",b->contents.offset,b->contents.text.data,b->contents.text.size));
+}
+#endif
+
+
+
 /*
  * postponed_stream - return stream associated with postponed messages
  *                    in argument.
@@ -1790,7 +1808,6 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
     	result = 1;				/* 1 = OK */
 
     	if (ps_global->openpgp->do_encrypt) {
-
 	    result = encrypt_outgoing_message(header, &body, ps_global->openpgp->do_sign);
 	}
 	else {
@@ -1798,7 +1815,7 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
 	}
 	lmc.so = so;
 	if (!result)
-	    return 0;
+	    return 0;				/* error */
     }
 #endif
 
@@ -2150,8 +2167,23 @@ call_mailer(METAENV *header, struct mail_bodystruct *body, char **alt_smtp_serve
     }
 #endif
 #ifdef OPENPGP
-    /* Free replacement encrypted body (no!  We always do copies
-     * of the bodies) */
+    /* Caller of 'call_mailer()' frees the body it passed to
+     * us.  Everything allocated while call_mailer() ran has
+     * to be freed here.  OpenPGP code always operates on
+     * copies of the original body, there is no link between
+     * original and copy!  So free the complete body here.
+     * TODO: pass **body to call_mailer(), save and free body
+     * in caller. */
+
+    if (ps_global->openpgp  &&  body != origBody) {
+	if (ps_global->openpgp->do_encrypt ) {
+	}
+	else if (ps_global->openpgp->do_sign) {
+	    assert(body->type == TYPEMULTIPART);
+	}
+
+    	pine_free_body(&body);
+    }
 #endif
 
     if(we_cancel)
@@ -2900,7 +2932,7 @@ pine_encode_body (struct mail_bodystruct *body)
 {
   PART *part;
 
-  dprint((4, "-- pine_encode_body: %d\n", body ? body->type : 0));
+  dprint((4, "-- pine_encode_body(%p): %d\n",body, body ? body->type : 0));
   if (body) switch (body->type) {
     char *freethis;
 
@@ -2931,6 +2963,9 @@ pine_encode_body (struct mail_bodystruct *body)
 	 * Do conversion pine_rfc822_output_body.
 	 * Attachments are left as is.
 	 */
+#if 1
+	DumpBody("pine_encode_body", body);
+#endif
       if(body->contents.text.data
 	 && so_attr((STORE_S *) body->contents.text.data, "edited", NULL)){
 	  char *charset, *posting_charset, *lp;
@@ -2940,7 +2975,7 @@ pine_encode_body (struct mail_bodystruct *body)
 	     && (posting_charset = posting_characterset(body, charset, MsgBody))){
 
 	      set_parameter(&body->parameter, "charset", posting_charset);
-		
+
 	      /*
 	       * Fix iso-2022-jp encoding to ENC7BIT since it's escape based
 	       * and doesn't use anything but ASCII characters.
@@ -3683,6 +3718,7 @@ posting_characterset(void *data, char *preferred_charset, MsgPart mp)
     static char *utf8 = "UTF-8";
     int notcjk = 0;
 
+    dprint((4, "posting_characterset(%p, %s, %u)",data,preferred_charset,mp));
     if(!ps_global->post_utf8){
 	validbitmap = 0;
 
@@ -4276,8 +4312,7 @@ pine_rfc822_output_body(struct mail_bodystruct *body, soutr_t f, void *s)
     LOC_2022_JP ljp;
     gf_io_t            gc;
 
-    dprint((4, "-- pine_rfc822_output_body: %d\n",
-	       body ? body->type : 0));
+    dprint((4, "-- pine_rfc822_output_body(%p): %d\n",body,body ? body->type : 0));
     if(body->type == TYPEMULTIPART) {   /* multipart gets special handling */
 	part = body->nested.part;	/* first body part */
 					/* find cookie */
@@ -4388,6 +4423,9 @@ pine_rfc822_output_body(struct mail_bodystruct *body, soutr_t f, void *s)
 	}
     }
 
+#if 1
+    DumpBody("pine_rfc822_output_body", body);
+#endif
     if((encode_error = gf_pipe(gc, l_putc)) != NULL){ /* shove body part down pipe */
 	q_status_message1(SM_ORDER | SM_DING, 3, 4,
 			  _("Encoding Error \"%s\""), encode_error);
@@ -4695,11 +4733,13 @@ pwbh_finish(int rv, STORE_S *so)
 void
 pine_free_body(struct mail_bodystruct **body)
 {
+    dprint((3, "pine_free_body(%p)\n",*body));
+
     /*
      * Preempt c-client's contents.text.data clean up since we've
      * usurped it's meaning for our own purposes...
      */
-    pine_free_body_data (*body);
+    pine_free_body_data(*body);
 
     /* Then let c-client handle the rest... */
     mail_free_body(body);

@@ -31,6 +31,9 @@ static char rcsid[] = "$Id$";
 #define PRIVATE	static
 
 
+#define DO_DUMPS		1
+
+
 /* Already decoded/verified OpenPGP parts contain this
  * data in it's 'sparep'.
  */
@@ -49,7 +52,9 @@ typedef struct _PGPDATA {
 
 
 
-#if 1
+#if DO_DUMPS
+extern void	DumpBody(char const * title, BODY * b);
+
 /* *******************************************************************
  * **** Debug Routines ***********************************************
  * **************************************************************** */
@@ -84,16 +89,19 @@ dump_gpgmedata(gpgme_data_t data)
 {
     unsigned char buffer[256];
     size_t	st;
-    off_t	pos;
-    off_t const oldpos = gpgme_data_seek(data, 0, SEEK_CUR);
-    off_t const size = gpgme_data_seek(data, 0, SEEK_END);
+    off_t	pos, oldpos, size;
+
+    oldpos = gpgme_data_seek(data, 0, SEEK_CUR);
+    size = gpgme_data_seek(data, 0, SEEK_END);
     pos = gpgme_data_seek(data, 0, SEEK_SET);
     if (0 != pos)
 	dprint((1,"dump_gpgmedata: SEEK_SET != 0??? (%ld, %s)",pos,strerror(errno)));
 
     dprint((2,"Starting buffer dump (%p, %ld bytes)...",data,size));
-    while ((st=gpgme_data_read(data, buffer, sizeof buffer)) > 0)
-	DumpBuffer(buffer, st);
+    while ((st=gpgme_data_read(data, buffer, sizeof buffer-1)) > 0) {
+	buffer[st] = '\0';
+	dprint((3,"%s",buffer))/*DumpBuffer(buffer, st)*/;
+    }
 
     pos = gpgme_data_seek(data, oldpos, SEEK_SET); /* restore position */
     if (oldpos != pos)
@@ -111,6 +119,50 @@ dump_gpgmedata(gpgme_data_t data)
  * **** Private Routines *********************************************
  * **************************************************************** */
 
+char *
+strlwr(char * s)
+{
+    char * start = s;
+    for (; *s != '\0'; ++s) {
+	*s = tolower(*s);
+    }
+    return start;
+}
+
+
+
+
+PRIVATE char const *
+validity2str(gpgme_validity_t keytrust)
+{
+    switch (keytrust) {
+    case GPGME_VALIDITY_UNKNOWN:
+	return "unknown";
+
+    case GPGME_VALIDITY_UNDEFINED:
+	return "undefined";
+
+    case GPGME_VALIDITY_NEVER:
+	return "never";
+
+    case GPGME_VALIDITY_MARGINAL:
+	return "marginal";
+
+    case GPGME_VALIDITY_FULL:
+	return "full";
+
+    case GPGME_VALIDITY_ULTIMATE:
+	return "ultimate";
+
+    default:
+	break;
+    }
+    return "(unknown)";
+}
+
+
+
+
 /* Write information about all signatures, one line per sig, to 'pc'.
  */
 PRIVATE void
@@ -122,16 +174,18 @@ openpgp_check_verify(gpgme_ctx_t ctx, PGPDATA * const pgpdata, gf_io_t pc)
     if (NULL != result) {
 	gpgme_signature_t sig;
 	for (sig = result->signatures; NULL != sig; sig = sig->next) {
-	    dprint((2, "openpgp_check_verify, fingerprint '%s', summay %#x",sig->fpr,sig->summary));
+	    dprint((2, "openpgp_check_verify, fingerprint '%s', summary %#x, status %#x (%s), algo %#x/%#x",sig->fpr,sig->summary,sig->status,gpgme_strerror(sig->status),sig->pubkey_algo,sig->hash_algo));
 	    if (NULL != pc) {
-		snprintf(tmp_20k_buf, SIZEOF_20KBUF, _("fingerprint '%s', sigsum %#x"),sig->fpr,sig->summary);
+		snprintf(tmp_20k_buf, SIZEOF_20KBUF, _("fingerprint '%s', '%s' (%#x), key trust '%s'"),sig->fpr,gpgme_strerror(sig->status),sig->summary,validity2str(sig->validity));
 		gf_puts(tmp_20k_buf, pc);
 		gf_puts(NEWLINE, pc);
 	    }
 	    if ((sig->summary & GPGME_SIGSUM_VALID))
 		++pgpdata->valid_sigs;
-	    else
+	    else {
+		dprint((1, "openpgp_check_verify: bad sig"));
 		++pgpdata->bad_sigs;
+	    }
 	}
     }
 
@@ -181,21 +235,32 @@ openpgp_check_decrypt(gpgme_ctx_t ctx, PGPDATA * const pgpdata, gf_io_t pc)
 
 
 
-PRIVATE void
+PRIVATE int
 check_sign_result(gpgme_sign_result_t result, gpgme_sig_mode_t type)
 {
-    if (result->invalid_signers) {
-	dprint((1, "Invalid signer found: %s\n", result->invalid_signers->fpr));
-	return;
+    gpgme_invalid_key_t inv;
+    gpgme_new_signature_t sig;
+    int	invcnt = 0;
+    int goodcnt = 0;
+
+    for (inv = result->invalid_signers; NULL != inv; inv = inv->next) {
+	++invcnt;
+	dprint((3, "check_sign_result: invalid signer found: %s\n", inv->fpr));
     }
-    if (!result->signatures || result->signatures->next) {
-	dprint((1, "Unexpected number of signatures created\n"));
-	return;
+    for (sig = result->signatures; NULL != sig; sig = sig->next) {
+	++goodcnt;
+	dprint((3, "signature pubkey algo %s (%#x), hash_algo %s (%#x)",gpgme_pubkey_algo_name(sig->pubkey_algo),sig->pubkey_algo,gpgme_hash_algo_name(sig->hash_algo),sig->hash_algo));
+	if (sig->type != type) {
+	    dprint((3, "Wrong type of signature created\n"));
+	}
     }
-    if (result->signatures->type != type) {
-	dprint((1, "Wrong type of signature created\n"));
-	return;
+    if (goodcnt != 1) {
+	dprint((1, "Unexpected number (%d) of signatures created\n",goodcnt));
     }
+    if (invcnt != 0) {
+	dprint((1, "%d invalid signatures created\n",invcnt));
+    }
+    return goodcnt;
 }
 
 
@@ -242,6 +307,10 @@ openpgp_new_context(gpgme_ctx_t * ctx)
 	gpgme_release(*ctx);
 	return err;
     }
+
+    gpgme_set_textmode(*ctx, 1);	   /* CRLF line-endings etc */
+    gpgme_set_armor(*ctx, 1);
+
     return GPG_ERR_NO_ERROR;
 }
 
@@ -257,8 +326,10 @@ openpgp_lookup_key(ADDRESS * a, int const private, gpgme_key_t * key)
 
     char	buf[MAXPATH];
 
-    if (!a || !a->mailbox || !a->host)
+    if (!a || !a->mailbox || !a->host) {
+	dprint((1, "openpgp_lookup_key: no address"));
 	return gpgme_error_from_errno(EDESTADDRREQ);
+    }
     snprintf(buf, sizeof buf, "%s@%s", a->mailbox, a->host);
     
     err = openpgp_new_context(&listctx);
@@ -491,12 +562,18 @@ setup_body(BODY *b, char *description, char *type, char *filename)
  * Return the result in a gpgme_data_t.
  */
 PRIVATE long
-rfc822_output_func(void *b, char *string)
+openpgp_output_func(void *b, char *string)
 {
     gpgme_data_t data = b;
-
-    return (gpgme_data_write(data, string, strlen(string)) > 0 ? 1L : 0L);
+    ssize_t	 written;
+    written = gpgme_data_write(data, string, strlen(string));
+    dprint((3,"openpgp_output_func(,%s): %ld, %s (%d)",string,written,strerror(errno),errno));
+    if (written > 0)
+	return 1L;
+    else
+	return 0L;
 }
+
 
 PRIVATE gpgme_error_t
 flatten_body(BODY *body, gpgme_data_t * data)
@@ -505,29 +582,40 @@ flatten_body(BODY *body, gpgme_data_t * data)
     off_t len;
 
     err = gpgme_data_new(data);
-    if (GPG_ERR_NO_ERROR != err)
+    if (GPG_ERR_NO_ERROR != err) {
+	dprint((1, "flatten_body: gpgme_data_new() error %s", gpgme_strerror(err)));
 	return err;
+    }
+    err = gpgme_data_set_encoding(*data, GPGME_DATA_ENCODING_ARMOR);
+    if (GPG_ERR_NO_ERROR != err) {
+	dprint((1, "flatten_body: gpgme_data_set_encoding() error %s", gpgme_strerror(err)));
+	gpgme_data_release(*data);
+	return err;
+    }
 
     pine_encode_body(body); /* this attaches random boundary strings to multiparts */
-    pine_write_body_header(body, rfc822_output_func, data);
-    pine_rfc822_output_body(body, rfc822_output_func, data);
+    pine_write_body_header(body, openpgp_output_func, *data);
+    pine_rfc822_output_body(body, openpgp_output_func, *data);
 
 #if 0 /*needed?*/
     /* We need to truncate by two characters since the above
      * appends CRLF (if there is something in it at all). */
 
-    len = gpgme_data_seek(data, 0, SEEK_CUR);
+    len = gpgme_data_seek(*data, 0, SEEK_CUR);
     if (len > 1) {
 	/* TODO: better/faster way */
 
 	size_t len;
-	char * p = gpgme_data_release_and_get_mem(data, &len);
+	char * p = gpgme_data_release_and_get_mem(*data, &len);
 	len -= 2;				/* remove CRLF */
 	gpgme_data_new_from_mem(data, buffer, len, 1); /* copy, size change */
 	gpgme_free(p);
     }
 #endif
 
+    gf_filter_init();				/* zero again */
+
+    //dump_gpgmedata(*data);
     return err;
 } 
 
@@ -606,18 +694,21 @@ openpgp_init(void)
 	&&  !(ps_global->openpgp && ps_global->openpgp->inited)) {
 
 	dprint((3, "openpgp_init()"));
-	if(!ps_global->openpgp)
+	if(NULL == ps_global->openpgp)
 	    ps_global->openpgp = new_openpgp_struct();
 
 	do {
 	    char const * cp;
+	    gpgme_engine_info_t info;
 
 	    /* The function `gpgme_check_version' must be called before
 	     * any other function in the library, because it initializes
 	     * the thread support subsystem in GPGME. (from the info page) */
  
 	    cp = gpgme_check_version(NULL);
-	    printf("gpgme version=%s\n", cp);
+	    dprint((1,"gpgme version=%s\n",cp));
+	    setlocale(LC_ALL, "");
+	    gpgme_set_locale(NULL, LC_CTYPE, setlocale(LC_CTYPE, NULL));
 
 	    /* Check for OpenPGP support */
 	    err = gpgme_engine_check_version(GPGME_PROTOCOL_OpenPGP);
@@ -626,6 +717,13 @@ openpgp_init(void)
 		break;
 	    }
 
+	    err = gpgme_get_engine_info(&info);
+	    if (GPG_ERR_NO_ERROR == err) {
+		for (; info; info = info->next) {
+		    dprint((3,"GPGME protocol %s, %s, %s",gpgme_get_protocol_name(info->protocol),info->file_name,info->version));
+
+		}
+	    }
 	} while (0);
 
 	if (GPG_ERR_NO_ERROR == err)
@@ -749,13 +847,13 @@ do_detached_signature_verify(BODY *b, long msgno, char *section)
 
 	if (0 == pgpdata->bad_sigs) {
 	    descr = cpystr(0 != pgpdata->valid_sigs
-			   ? _("This message was cryptographically signed." NEWLINE)
-			   : _("This message couldn't be verified." NEWLINE));
+			   ? _("This message was cryptographically signed.")
+			   : _("This message couldn't be verified."));
 	}
 	else {
 	    descr = cpystr(0 != pgpdata->valid_sigs
-			   ? _("This message was cryptographically signed by some signatures." NEWLINE)
-			   : _("This message contains bad signatures." NEWLINE));
+			   ? _("This message was cryptographically signed by some signatures.")
+			   : _("This message contains only bad signatures."));
 	}
     } while (0);
     gpgme_data_release(signature);	signature = NULL;
@@ -1128,6 +1226,9 @@ fiddle_openpgp_message(BODY *b, long msgno)
  *
  * This takes the header for the outgoing message as well as a pointer
  * to the current body (which may be reallocated).
+ * RESULT:
+ *	0	error
+ *	1	OK, modified the message, continue to send
  */
 PUBLIC int
 sign_outgoing_message(METAENV *header, BODY **bodyP, int dont_detach)
@@ -1137,13 +1238,20 @@ sign_outgoing_message(METAENV *header, BODY **bodyP, int dont_detach)
 
     gpgme_error_t   err;
     gpgme_ctx_t     ctx;
-    gpgme_data_t    message, signature;
+    gpgme_data_t    message=NULL, signature=NULL;
 
 
     dprint((3, "sign_outgoing_message()"));
+    assert (0 == dont_detach);			/* not supported */
+
     err = openpgp_init();
-    if (GPG_ERR_NO_ERROR != err)
-	return err;
+    if (GPG_ERR_NO_ERROR == err)
+	err = openpgp_new_context(&ctx);
+    if (GPG_ERR_NO_ERROR != err) {
+	dprint((1, "sign_outgoing_message: gpgme error %s", gpgme_strerror(err)));
+	return 0;
+    }
+
 
     do {
 	gpgme_sign_result_t	gpgres;
@@ -1152,31 +1260,23 @@ sign_outgoing_message(METAENV *header, BODY **bodyP, int dont_detach)
 	PART * p2 = NULL;
 
 
-	/* Create our own context for this message. */
-
-	err = openpgp_new_context(&ctx);
-	if (GPG_ERR_NO_ERROR != err) {
-	    break;
-	}
-	gpgme_set_protocol(ctx, GPGME_PROTOCOL_OpenPGP);
-	gpgme_set_armor(ctx, 1);
-	gpgme_set_textmode(ctx, 1);	   /* CRLF line-endings etc */
-
-
 	/* Add signers key to context */
 
 	err = set_signer(ctx, header);
 	if (GPG_ERR_NO_ERROR != err)
-	    break;
+	    break;				/* dprint() done */
 
 
 	/* Create and initialize data buffers for message and signature. */
 
 	err = flatten_body(oldbody, &message);
-	if (GPG_ERR_NO_ERROR == err)
-	    err = gpgme_data_new(&signature);
 	if (GPG_ERR_NO_ERROR != err)
+	    break;				/* dprint() done */
+	err = gpgme_data_new(&signature);
+	if (GPG_ERR_NO_ERROR != err) {
+	    dprint((1, "gpgme_data_new: gpgme error %s", gpgme_strerror(err)));
 	    break;
+	}
 
 	if (0 /*dont_detach*/) {
 	    STORE_S * outs;
@@ -1200,16 +1300,23 @@ sign_outgoing_message(METAENV *header, BODY **bodyP, int dont_detach)
 	}
 	else {
 	    STORE_S * s1, * s2;
+	    off_t	i;		/* some signed integer type */
 
 	    /* Create detached signature in 'signature'
 	     * (cleartext selected above). */
 
+	    dump_gpgmedata(message);
+	    i = gpgme_data_seek(message, 0, SEEK_SET);
+	    assert (i == 0);
 	    err = gpgme_op_sign(ctx, message, signature, GPGME_SIG_MODE_DETACH);
-	    if (GPG_ERR_NO_ERROR != err)
+	    if (GPG_ERR_NO_ERROR != err) {
+		dprint((1, "sign_outgoing_message: gpgme error %s", gpgme_strerror(err)));
 		break;
+	    }
 	    gpgres = gpgme_op_sign_result(ctx);
-	    check_sign_result(gpgres, GPGME_SIG_MODE_DETACH);
-
+	    i = check_sign_result(gpgres, GPGME_SIG_MODE_DETACH);
+	    assert (i > 0);
+	    dump_gpgmedata(message);
 
 	    /* Copy gpgme data to STORE_S data, copy 'message' because
 	     * data may have been altered (MIME canonical data). */
@@ -1221,10 +1328,10 @@ sign_outgoing_message(METAENV *header, BODY **bodyP, int dont_detach)
 	    /* Create a new body to contain the signed message.
 	     *
 	     * multipart/signed; blah blah blah
-	     *      copy of existing body, possible containing several
-	     *	parts (1 or 1.1., 1.2, 1.3)
+	     *   1	copy of existing body, possible containing several
+	     *		parts (1 or 1.1., 1.2, 1.3)
 	     *
-	     *	2 OpenPGP object 
+	     *	 2	OpenPGP object 
 	     */
 
 	    newBody = mail_newbody();
@@ -1234,12 +1341,18 @@ sign_outgoing_message(METAENV *header, BODY **bodyP, int dont_detach)
 	    newBody->encoding = ENC7BIT;
 
 	    set_parameter(&newBody->parameter, "protocol", "application/pgp-signature");
-	    set_parameter(&newBody->parameter, "micalg", "PGP-SHA1");
+	    {
+		char buffer[MAXPATH];
+		sprintf(buffer, "pgp-%s", gpgme_hash_algo_name(gpgres->signatures->hash_algo));
+		set_parameter(&newBody->parameter, "micalg", strlwr(buffer));
+	    }
 
 	    p1 = mail_newbody_part();		/* will get the old body */
 	    p2 = mail_newbody_part();		/* gets signature */
 
 	    p1->body.contents.text.data = (unsigned char *)s1;
+	    so_attr(s1, "rawbody", "1");	/* don't modify further */
+	    p1->body.encoding = ENC7BIT;
 	    p1->next = p2;
 
 	    setup_body(&p2->body, "OpenPGP Cryptographic Signature", "pgp-signature", "signature.asc");
@@ -1248,7 +1361,12 @@ sign_outgoing_message(METAENV *header, BODY **bodyP, int dont_detach)
 	    newBody->nested.part = p1;
 	    *bodyP = newBody;
 
-	    result = 1;
+	    /* Dump part 1, should be passed unmodified to the SMTP server
+	     * ENC7BIT (or not even TEXT/plain?) */
+
+	    DumpBody("sign_outgoing_message: p1->body", &p1->body);
+
+	    result = 1;				/* OK, modified the message */
 	}
 
     } while (0);
@@ -1260,12 +1378,8 @@ sign_outgoing_message(METAENV *header, BODY **bodyP, int dont_detach)
     gpgme_data_release(message);
     gpgme_release(ctx);
 
-    /*FIXME: should we release 'oldbody'?*/
-
-    mail_free_body(&oldbody);
-
-    dprint((2, "sign_outgoing_message returns %d", err));
-    return err;
+    dprint((2, "sign_outgoing_message returns %d, body=%p",result,*bodyP));
+    return result;
 }
 
 
@@ -1283,15 +1397,18 @@ encrypt_outgoing_message(METAENV *header, BODY **bodyP, int const do_sign)
 
     gpgme_error_t   err;
     gpgme_ctx_t     ctx;
-    gpgme_data_t    message, ciphertext;
+    gpgme_data_t    message=NULL, ciphertext=NULL;
     gpgme_key_t *   rset = NULL;
 
 
-
-    dprint((3, "encrypt_outgoing_message()"));
+    dprint((3, "encrypt_outgoing_message(,,%d)",do_sign));
     err = openpgp_init();
-    if (GPG_ERR_NO_ERROR != err)
-	return err;
+    if (GPG_ERR_NO_ERROR == err)
+	err = openpgp_new_context(&ctx);
+    if (GPG_ERR_NO_ERROR != err) {
+	dprint((1, "encrypt_outgoing_message: gpgme error %s", gpgme_strerror(err)));
+	return 0;
+    }
 
 
     do {
@@ -1302,16 +1419,7 @@ encrypt_outgoing_message(METAENV *header, BODY **bodyP, int const do_sign)
 	PART * p2 = NULL;
 
 
-	/* Create our own context for this message. */
-
-	err = openpgp_new_context(&ctx);
-	if (GPG_ERR_NO_ERROR != err) {
-	    break;
-	}
-	gpgme_set_protocol(ctx, GPGME_PROTOCOL_OpenPGP);
-	gpgme_set_armor(ctx, 1);
-	gpgme_set_textmode(ctx, 1);	   /* CRLF line-endings etc */
-
+	/* Adjust context for this message. */
 
 	err = create_keyset(ctx, header, 1, &rset);
 	if (GPG_ERR_NO_ERROR != err)
@@ -1326,10 +1434,13 @@ encrypt_outgoing_message(METAENV *header, BODY **bodyP, int const do_sign)
 	/* Create and initialize data buffers for message and signature. */
 
 	err = flatten_body(oldbody, &message);
-	if (GPG_ERR_NO_ERROR == err)
-	    err = gpgme_data_new(&ciphertext);
 	if (GPG_ERR_NO_ERROR != err)
+	    break;				/* dprint() done */
+	err = gpgme_data_new(&ciphertext);
+	if (GPG_ERR_NO_ERROR != err) {
+	    dprint((1, "gpgme_data_new: gpgme error %s", gpgme_strerror(err)));
 	    break;
+	}
 
 
 	if (do_sign) {
@@ -1339,6 +1450,10 @@ encrypt_outgoing_message(METAENV *header, BODY **bodyP, int const do_sign)
 	else {
 	    err = gpgme_op_encrypt(ctx, rset, GPGME_ENCRYPT_ALWAYS_TRUST,
 				   message, ciphertext);
+	}
+	if (GPG_ERR_NO_ERROR != err) {
+	    dprint((1, "gpgme_op_encrypt[_sign]: gpgme error %s", gpgme_strerror(err)));
+	    break;
 	}
 
 	/* Copy gpgme data to STORE_S data */
@@ -1366,11 +1481,13 @@ encrypt_outgoing_message(METAENV *header, BODY **bodyP, int const do_sign)
 	setup_body(&p1->body, "OpenPGP control information", "pgp-encrypted", NULL);
 	so_seek(s1, 0, SEEK_SET);
 	p1->body.contents.text.data = (unsigned char *)s1;
+	p1->next = p2;
 
 	setup_body(&p2->body, "OpenPGP encrypted data", "octet-stream", NULL);
 	so_seek(s2, 0, SEEK_SET);
 	p2->body.contents.text.data = (unsigned char *)s2;
 
+	newBody->nested.part = p1;
 	*bodyP = newBody;
 
 	result = 1;
@@ -1384,11 +1501,7 @@ encrypt_outgoing_message(METAENV *header, BODY **bodyP, int const do_sign)
     gpgme_data_release(message);
     gpgme_release(ctx);
 
-    /*FIXME: should we release 'oldbody'?*/
-
-    mail_free_body(&oldbody);
-
-    dprint((2, "encrypt_outgoing_message returns %d", result));
+    dprint((2, "encrypt_outgoing_message returns %d, body=%p", result,*bodyP));
     return result;
 }
 
